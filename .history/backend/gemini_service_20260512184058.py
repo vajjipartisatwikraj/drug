@@ -495,7 +495,7 @@ class GemmaAuditService:
             "temperature": GENERATION_TEMPERATURE,
             "top_p": GENERATION_TOP_P,
             "top_k": GENERATION_TOP_K,
-            "max_output_tokens": 15000, # 15k for reasoning / output
+            "max_output_tokens": 20000, # 15k for reasoning / output
             "media_resolution": GENERATION_MEDIA_RESOLUTION,
             # Keep function-calling under explicit backend control.
             "automatic_function_calling": types.AutomaticFunctionCallingConfig(

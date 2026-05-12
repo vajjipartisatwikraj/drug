@@ -24,7 +24,8 @@ interface UseAuditReturn {
   error: string | null;
   elapsedTime: string | null;
   pipelineChecks: PipelineCheck[];
-  uploadAndAudit: (file: File) => Promise<void>;
+  uploadAndAudit: (file: File, token: string) => Promise<void>;
+  loadExistingAudit: (markdownContent: string) => void;
   reset: () => void;
 }
 
@@ -96,7 +97,7 @@ export function useAudit(): UseAuditReturn {
     };
   }, []);
 
-  const uploadAndAudit = useCallback(async (file: File) => {
+  const uploadAndAudit = useCallback(async (file: File, token: string) => {
     const runId = runIdRef.current + 1;
     runIdRef.current = runId;
 
@@ -170,6 +171,9 @@ export function useAudit(): UseAuditReturn {
       const uploadResponse = await fetch("/api/upload", {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!uploadResponse.ok) {
@@ -186,7 +190,7 @@ export function useAudit(): UseAuditReturn {
       setStatus("processing");
 
       const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${wsProtocol}//${window.location.host}/api/audit/${job_id}`;
+      const wsUrl = `${wsProtocol}//${window.location.host}/api/audit/${job_id}?token=${encodeURIComponent(token)}`;
 
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -415,6 +419,24 @@ export function useAudit(): UseAuditReturn {
     setPipelineChecks(initialPipelineChecks());
   }, []);
 
+  const loadExistingAudit = useCallback((markdownContent: string) => {
+    runIdRef.current += 1;
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (elapsedIntervalRef.current) {
+      clearInterval(elapsedIntervalRef.current);
+      elapsedIntervalRef.current = null;
+    }
+    startTimeRef.current = null;
+    setMarkdown(markdownContent);
+    setStatus("completed");
+    setError(null);
+    setElapsedTime(null);
+    setPipelineChecks(initialPipelineChecks().map((s) => ({ ...s, status: "done" })));
+  }, []);
+
   return {
     markdown,
     status,
@@ -422,6 +444,7 @@ export function useAudit(): UseAuditReturn {
     elapsedTime,
     pipelineChecks,
     uploadAndAudit,
+    loadExistingAudit,
     reset,
   };
 }

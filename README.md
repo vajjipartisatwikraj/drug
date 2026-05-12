@@ -1,29 +1,36 @@
 # BMR Audit System
 
-A pharmaceutical Batch Manufacturing Record (BMR) audit application powered by Mistral OCR + Gemini with Zero-Trust validation.
+A pharmaceutical Batch Manufacturing Record (BMR) audit application powered by Mistral OCR + Gemini with zero-trust validation, now backed by MongoDB and JWT auth.
 
 ## Features
 
-- **High-Fidelity OCR** - Extracts text exactly as written, distinguishing handwritten from printed entries
-- **Signature Detection** - Identifies and validates all signature fields
-- **Mathematical Validation** - Uses Calculation API (Python code execution) to verify all calculations
-- **Cross-Page Consistency** - Validates batch numbers and totals across the entire document
-- **Live Streaming** - Watch the audit results appear in real-time
-- **Beautiful Markdown Preview** - Professional rendering of tables, code blocks, and status badges
+- High-fidelity OCR extraction and AI-driven audit verification
+- Per-page analysis with streaming markdown preview
+- Mathematical validation with local Python math engine
+- MongoDB persistence for users, documents, pages, and reports
+- Role-based auth: **Admin** and **Auditor**
 
-## Architecture
+## Roles
 
-```
-drug/
-├── backend/           # FastAPI + Mistral OCR + Gemini
-│   ├── main.py        # API endpoints
-│   ├── gemini_service.py  # Gemini integration (via Google GenAI SDK)
-│   └── prompts.py     # Audit prompts
-└── frontend/          # React + Vite + TailwindCSS
-    └── src/
-        ├── App.tsx
-        └── components/
-```
+1. **Admin**
+   - Default credentials: `admin` / `admin123`
+   - Can create auditor users
+2. **Auditor**
+   - Can login, upload BMR PDFs, and run/track audits
+
+## Data Models and Relations
+
+- **Admin**: system administrator account.
+- **Auditor**: employee account with employee details and audited document IDs.
+- **Document**: uploaded PDF; groups page IDs and one report ID.
+- **Page**: per-page metadata (`status`, `numeric_calc`, `signatures`, `dates`, `information`, `summary_text`, `auditor_id`).
+- **Report**: document summary (`total_passed`, `total_failed`, `pipeline_validation`, `document_id`).
+
+Relations:
+- Auditor `1..*` Document
+- Document `1..*` Page
+- Document `1..1` Report
+- Page `*..1` Auditor
 
 ## Quick Start
 
@@ -39,32 +46,15 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Required: Gemini API key
-# PowerShell
-$env:GEMINI_API_KEY="your_api_key_here"
-
-# Required: Mistral API key (Document AI / OCR)
-$env:MISTRAL_API_KEY="your_mistral_api_key_here"
-
-# Note: This backend uses Google Gemini (audit + tool calling)
-# and Mistral OCR (document text extraction).
-
-# Optional runtime flags
-$env:GEMINI_MODEL_ID="gemma-4-31b-it"
-$env:ENABLE_CODE_EXECUTION="true"
-$env:EMIT_CALCULATION_TRACE="false"
-$env:MODEL_SERVER_RETRIES="6"
-$env:MODEL_SERVER_REQUEST_TIMEOUT_SECONDS="0"   # 0 disables backend timeout
-$env:OUTPUT_REPAIR_TIMEOUT_SECONDS="20"         # avoid hanging on post-format repair pass
-$env:MODEL_SERVER_RETRY_BASE_SECONDS="3"
-$env:MODEL_SERVER_RETRY_MAX_SECONDS="90"
-$env:MODEL_SERVER_RETRY_OCR_CHARS="450000"
-$env:MAX_UPLOAD_SIZE_MB="100"
-$env:PDF_COMPRESSION_TRIGGER_MB="20"
-$env:MAX_OUTPUT_TOKENS="24576"
-# Generation setup is enforced in backend code:
-# temperature=0.2, top_p=0.9, top_k=40
-# media_resolution=MEDIA_RESOLUTION_HIGH (max visual token budget level)
+# Configure backend/.env
+# Required values:
+# MONGO_URI=mongodb://127.0.0.1:27017
+# MONGO_DB_NAME=drug_audit
+# JWT_SECRET_KEY=change-me-in-production
+# DEFAULT_ADMIN_USERNAME=admin
+# DEFAULT_ADMIN_PASSWORD=admin123
+# GEMINI_API_KEY=your_api_key_here
+# MISTRAL_API_KEY=your_mistral_api_key_here
 
 # Run the server
 uvicorn main:app --reload --port 8000
@@ -74,68 +64,39 @@ uvicorn main:app --reload --port 8000
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Run development server
 npm run dev
 ```
 
-### 3. Access the Application
+### 3. Access the App
 
-Open http://localhost:5173 in your browser.
+Open `http://localhost:5173` and login.
 
-## Usage
+## Auth API
 
-1. **Upload** - Drag and drop your BMR PDF (up to 100MB, 70+ pages supported)
-2. **Wait** - The system processes each page with mathematical validation
-3. **Review** - View the live audit report with PASS/FAIL indicators
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/api/auth/login` | POST | Login with username/password and get JWT token |
+| `/api/auth/me` | GET | Get current authenticated user profile |
+| `/api/admin/users` | POST | Admin-only: create auditor user |
 
-## Technical Details
+## Audit API
 
-### Gemini Configuration
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/api/upload` | POST | Upload PDF and create document/job |
+| `/api/audit/{job_id}` | WS | Stream audit output (`?token=<JWT>`) |
+| `/api/status/{job_id}` | GET | Get persisted document/report status |
+| `/api/job/{job_id}` | DELETE | Delete job, pages, report, and file |
 
-- **SDK**: `google-genai`
-- **Model**: `gemma-4-31b-it` (locked model)
-- **API Key Source**: `GEMINI_API_KEY` or `GOOGLE_API_KEY` must be set in environment
-- **Generation**: `temperature=0.2`, `top_p=0.9`, `top_k=40`
-- **Thinking Trigger**: disabled (`<|think|>` is stripped from system instructions)
-- **Media Resolution**: `MEDIA_RESOLUTION_HIGH` (max detail token budget level)
-- **Input Payload**: System instruction + uploaded PDF + OCR output are sent together
-- **Model Reliability Fallbacks**: transient Gemini 500/internal errors are retried with backoff and safer fallback payload/config
-- **Features**: Code Execution enabled for math validation (`ENABLE_CODE_EXECUTION=true`)
-- **Fallback**: If model/tool does not support code execution, audit continues with manual BODMAS output
-- **Streaming Behavior**: Response parts are parsed directly (text + tool parts), so non-text part warnings are avoided
-
-### Mistral OCR Configuration
-
-- **Endpoint**: `https://api.mistral.ai/v1/ocr` (override with `MISTRAL_OCR_ENDPOINT`)
-- **Model**: `mistral-ocr-latest` (override with `MISTRAL_OCR_MODEL`)
-- **API Key Source**: `MISTRAL_API_KEY` (or `backend/local_mistral_api_key.txt`)
-- **Pipeline**: Upload PDF → Mistral OCR extraction → Gemini receives prompt + visual PDF file + OCR text for validation and audit
-
-### Validation Components
-
-- Gross/Tare/Net weight calculations
-- Cumulative totals vs theoretical quantities
-- Batch number consistency
-- Required signature fields
-- Date field validation
-
-## API Endpoints
-
-| Endpoint               | Method | Description                     |
-| ---------------------- | ------ | ------------------------------- |
-| `/api/upload`          | POST   | Upload PDF, returns job_id      |
-| `/api/audit/{job_id}`  | WS     | WebSocket for streaming results |
-| `/api/status/{job_id}` | GET    | Check job status                |
+All protected routes require `Authorization: Bearer <token>`.
 
 ## Requirements
 
 ### Backend
 
 - Python 3.10+
+- MongoDB
 - FastAPI
 - google-genai
 
