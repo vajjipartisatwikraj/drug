@@ -2,16 +2,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { Layout } from "./components/layout";
 import LandingPage from "./components/LandingPage";
-import { AuditPage } from "./pages/user/AuditPage";
-import { DocumentsPage } from "./pages/user/DocumentsPage";
-import { DocumentDetailPage } from "./pages/user/DocumentDetailPage";
-import { ReportsPage } from "./pages/user/ReportsPage";
-import { ReportDetailPage } from "./pages/user/ReportDetailPage";
-import { SettingsPage } from "./pages/user/SettingsPage";
-import { ProfilePage } from "./pages/user/ProfilePage";
-import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
-import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
-import { AdminDocsPage } from "./pages/admin/AdminDocsPage";
+import { AuditPage } from "./pages/AuditPage";
+import { DocumentsPage } from "./pages/DocumentsPage";
+import { ReportsPage } from "./pages/ReportsPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { ProfilePage } from "./pages/ProfilePage";
+import { AdminUsersPage } from "./pages/AdminUsersPage";
+import { AdminDocsPage } from "./pages/AdminDocsPage";
 
 type Role = "admin" | "auditor";
 type AppPage = "audit" | "admin-users" | "admin-docs";
@@ -128,12 +125,40 @@ const LoginPageComponent: React.FC<LoginPageProps> = ({
 
 function App() {
   const navigate = useNavigate();
+  const {
+    markdown,
+    status,
+    error,
+    elapsedTime,
+    pipelineChecks,
+    uploadAndAudit,
+    loadExistingAudit,
+    reset,
+  } = useAudit();
 
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("authToken"));
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [newUserForm, setNewUserForm] = useState({ username: "", password: "" });
+  const [adminMessage, setAdminMessage] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState<AppPage>("audit");
+  const [recentDocs, setRecentDocs] = useState<RecentDocument[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(false);
+  const [recentError, setRecentError] = useState<string | null>(null);
+
+  const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
+  const [adminUserTotals, setAdminUserTotals] = useState<{ admins: number; auditors: number; users: number } | null>(null);
+  const [loadingAdminUsers, setLoadingAdminUsers] = useState(false);
+  const [adminUsersError, setAdminUsersError] = useState<string | null>(null);
+
+  const [adminDocs, setAdminDocs] = useState<AdminDocumentRow[]>([]);
+  const [adminDocsTotal, setAdminDocsTotal] = useState(0);
+  const [loadingAdminDocs, setLoadingAdminDocs] = useState(false);
+  const [adminDocsError, setAdminDocsError] = useState<string | null>(null);
+  const [docFilter, setDocFilter] = useState({ year: "", month: "", day: "", limit: "50" });
 
   useEffect(() => {
     if (!token) {
@@ -151,6 +176,7 @@ function App() {
         if (cancelled) return;
         setUser(me);
         setAuthError(null);
+        if (me.role !== "admin") setCurrentPage("audit");
       } catch (e) {
         if (cancelled) return;
         localStorage.removeItem("authToken");
@@ -164,10 +190,80 @@ function App() {
     };
   }, [token]);
 
+  useEffect(() => {
+    if (!token || !user) return;
+    setLoadingRecent(true);
+    setRecentError(null);
+    void (async () => {
+      try {
+        const response = await fetch("/api/auditor/recent-documents?limit=20", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.detail || "Failed to fetch recent documents");
+        setRecentDocs((payload.documents || []) as RecentDocument[]);
+      } catch (err) {
+        setRecentError(err instanceof Error ? err.message : "Failed to fetch recent documents");
+      } finally {
+        setLoadingRecent(false);
+      }
+    })();
+  }, [token, user, status]);
+
+  const fetchAdminUsers = async () => {
+    if (!token || user?.role !== "admin") return;
+    setLoadingAdminUsers(true);
+    setAdminUsersError(null);
+    try {
+      const response = await fetch("/api/admin/users/details", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || "Failed to fetch user details");
+      setAdminUsers((payload.users || []) as AdminUserRow[]);
+      setAdminUserTotals(payload.totals || null);
+    } catch (err) {
+      setAdminUsersError(err instanceof Error ? err.message : "Failed to fetch user details");
+    } finally {
+      setLoadingAdminUsers(false);
+    }
+  };
+
+  const fetchAdminDocs = async () => {
+    if (!token || user?.role !== "admin") return;
+    setLoadingAdminDocs(true);
+    setAdminDocsError(null);
+    try {
+      const qs = new URLSearchParams();
+      if (docFilter.year.trim()) qs.set("year", docFilter.year.trim());
+      if (docFilter.month.trim()) qs.set("month", docFilter.month.trim());
+      if (docFilter.day.trim()) qs.set("day", docFilter.day.trim());
+      if (docFilter.limit.trim()) qs.set("limit", docFilter.limit.trim());
+      const response = await fetch(`/api/admin/documents/details?${qs.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || "Failed to fetch document details");
+      setAdminDocs((payload.recent_documents || []) as AdminDocumentRow[]);
+      setAdminDocsTotal(payload.total_documents || 0);
+    } catch (err) {
+      setAdminDocsError(err instanceof Error ? err.message : "Failed to fetch document details");
+    } finally {
+      setLoadingAdminDocs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!token || user?.role !== "admin") return;
+    if (currentPage === "admin-users") void fetchAdminUsers();
+    if (currentPage === "admin-docs") void fetchAdminDocs();
+  }, [currentPage, token, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setIsAuthLoading(true);
     setAuthError(null);
+    setAdminMessage(null);
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -180,6 +276,7 @@ function App() {
       setToken(payload.access_token);
       setUser(payload.user as AuthUser);
       setLoginForm({ username: "", password: "" });
+      setCurrentPage("audit");
       navigate("/audit");
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : "Login failed");
@@ -192,7 +289,63 @@ function App() {
     localStorage.removeItem("authToken");
     setToken(null);
     setUser(null);
+    setAdminMessage(null);
+    setRecentDocs([]);
+    setAdminUsers([]);
+    setAdminDocs([]);
+    setCurrentPage("audit");
     navigate("/");
+    reset();
+  };
+
+  const handleCreateUser = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setAdminMessage(null);
+    setAuthError(null);
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newUserForm),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || "User creation failed");
+      setAdminMessage(`Auditor '${payload.username}' created successfully.`);
+      setNewUserForm({ username: "", password: "" });
+      void fetchAdminUsers();
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : "User creation failed");
+    }
+  };
+
+  const handleFileSelect = async (file: File) => {
+    if (!token) {
+      setAuthError("Please login first.");
+      return;
+    }
+    await uploadAndAudit(file, token);
+  };
+
+  const openRecentDocument = async (documentId: string) => {
+    if (!token) return;
+    setRecentError(null);
+    try {
+      const response = await fetch(`/api/documents/${documentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || "Failed to load document");
+      const documentMarkdown = (payload.document?.result || "") as string;
+      if (!documentMarkdown) throw new Error("This document has no saved analysis output.");
+      loadExistingAudit(documentMarkdown);
+      setCurrentPage("audit");
+    } catch (err) {
+      setRecentError(err instanceof Error ? err.message : "Failed to load document");
+    }
   };
 
   // Routes configuration
@@ -228,35 +381,11 @@ function App() {
         }
       />
       <Route
-        path="/document/:id"
-        element={
-          token && user ? (
-            <Layout user={user} onLogout={handleLogout}>
-              <DocumentDetailPage token={token} />
-            </Layout>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
         path="/reports"
         element={
           token && user ? (
             <Layout user={user} onLogout={handleLogout}>
               <ReportsPage />
-            </Layout>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/report/:id"
-        element={
-          token && user ? (
-            <Layout user={user} onLogout={handleLogout}>
-              <ReportDetailPage token={token} />
             </Layout>
           ) : (
             <Navigate to="/login" replace />
@@ -293,18 +422,6 @@ function App() {
           token && user && user.role === "admin" ? (
             <Layout user={user} onLogout={handleLogout}>
               <AdminUsersPage token={token} />
-            </Layout>
-          ) : (
-            <Navigate to="/audit" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/user/:id"
-        element={
-          token && user && user.role === "admin" ? (
-            <Layout user={user} onLogout={handleLogout}>
-              <AdminUserDetailPage token={token} />
             </Layout>
           ) : (
             <Navigate to="/audit" replace />

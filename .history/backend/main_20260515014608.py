@@ -122,7 +122,8 @@ def _serialize_document(doc: dict[str, Any]) -> dict[str, Any]:
 def _parse_page_sections(markdown: str) -> list[tuple[int, str]]:
     lines = markdown.splitlines()
     matches: list[tuple[int, int]] = []
-    pattern = re.compile(r"^\s*(?:#+\s*)?Page\s+(\d+)\b", re.IGNORECASE)
+    # Match patterns like "## PAGE 1", "PAGE 1", "### PAGE 1 (Printed Page: Y)", etc.
+    pattern = re.compile(r"^#{0,6}\s*PAGE\s+(\d+)", re.IGNORECASE)
     for idx, line in enumerate(lines):
         m = pattern.match(line.strip())
         if m:
@@ -139,7 +140,11 @@ def _parse_page_sections(markdown: str) -> list[tuple[int, str]]:
 
 
 def _extract_page_status(section_text: str) -> str:
-    m = re.search(r"Status\s*:\s*([A-Za-z/ -]+)", section_text, flags=re.IGNORECASE)
+    # Try to match "Status:" format (both plain and **bold** markdown)
+    m = re.search(r"\*\*Status\*\*\s*:\s*([A-Za-z/ -]+)", section_text, flags=re.IGNORECASE)
+    if not m:
+        # Fallback to plain text format
+        m = re.search(r"Status\s*:\s*([A-Za-z/ -]+)", section_text, flags=re.IGNORECASE)
     if not m:
         return "unknown"
     status = m.group(1).strip().upper()
@@ -148,7 +153,7 @@ def _extract_page_status(section_text: str) -> str:
     if "FAIL" in status:
         return "fail"
     if "VOID" in status:
-        return "void"
+        return "fail"  # Treat voided as fail for now
     return status.lower()
 
 

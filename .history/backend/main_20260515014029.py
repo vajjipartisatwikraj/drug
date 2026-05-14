@@ -761,10 +761,6 @@ async def get_document_details(
     pages = await get_db().pages.find({"document_id": oid}).sort("page_number", 1).to_list(length=5000)
     report = await get_db().reports.find_one({"document_id": oid})
 
-    # Count pass and fail pages
-    pass_count = sum(1 for p in pages if p.get("status") in ["pass", "manual_pass"])
-    fail_count = sum(1 for p in pages if p.get("status") in ["fail", "manual_fail"])
-    
     serialized_doc = _serialize_document(doc)
     serialized_pages = []
     for page in pages:
@@ -780,13 +776,6 @@ async def get_document_details(
                 "information": page.get("information", []),
                 "summary_text": page.get("summary_text", ""),
                 "auditor_id": str(page.get("auditor_id")),
-                "details": {
-                    "numeric_calc": page.get("numeric_calc", []),
-                    "signatures": page.get("signatures", []),
-                    "dates": page.get("dates", []),
-                    "information": page.get("information", []),
-                    "summary": page.get("summary_text", ""),
-                }
             }
         )
 
@@ -805,15 +794,7 @@ async def get_document_details(
         }
 
     return {
-        "document": {
-            **serialized_doc,
-            "pages": serialized_pages,
-            "summary": {
-                "pass_count": pass_count,
-                "fail_count": fail_count,
-                "total_pages": len(pages),
-            }
-        },
+        "document": serialized_doc,
         "pages": serialized_pages,
         "report": serialized_report,
     }

@@ -300,18 +300,6 @@ function App() {
         }
       />
       <Route
-        path="/admin/user/:id"
-        element={
-          token && user && user.role === "admin" ? (
-            <Layout user={user} onLogout={handleLogout}>
-              <AdminUserDetailPage token={token} />
-            </Layout>
-          ) : (
-            <Navigate to="/audit" replace />
-          )
-        }
-      />
-      <Route
         path="/admin-docs"
         element={
           token && user && user.role === "admin" ? (

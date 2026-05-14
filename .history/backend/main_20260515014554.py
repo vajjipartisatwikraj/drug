@@ -139,7 +139,11 @@ def _parse_page_sections(markdown: str) -> list[tuple[int, str]]:
 
 
 def _extract_page_status(section_text: str) -> str:
-    m = re.search(r"Status\s*:\s*([A-Za-z/ -]+)", section_text, flags=re.IGNORECASE)
+    # Try to match "Status:" format (both plain and **bold** markdown)
+    m = re.search(r"\*\*Status\*\*\s*:\s*([A-Za-z/ -]+)", section_text, flags=re.IGNORECASE)
+    if not m:
+        # Fallback to plain text format
+        m = re.search(r"Status\s*:\s*([A-Za-z/ -]+)", section_text, flags=re.IGNORECASE)
     if not m:
         return "unknown"
     status = m.group(1).strip().upper()
@@ -148,7 +152,7 @@ def _extract_page_status(section_text: str) -> str:
     if "FAIL" in status:
         return "fail"
     if "VOID" in status:
-        return "void"
+        return "fail"  # Treat voided as fail for now
     return status.lower()
 
 

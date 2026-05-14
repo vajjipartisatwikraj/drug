@@ -10,7 +10,6 @@ import { ReportDetailPage } from "./pages/user/ReportDetailPage";
 import { SettingsPage } from "./pages/user/SettingsPage";
 import { ProfilePage } from "./pages/user/ProfilePage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
-import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
 import { AdminDocsPage } from "./pages/admin/AdminDocsPage";
 
 type Role = "admin" | "auditor";
@@ -228,35 +227,11 @@ function App() {
         }
       />
       <Route
-        path="/document/:id"
-        element={
-          token && user ? (
-            <Layout user={user} onLogout={handleLogout}>
-              <DocumentDetailPage token={token} />
-            </Layout>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
         path="/reports"
         element={
           token && user ? (
             <Layout user={user} onLogout={handleLogout}>
               <ReportsPage />
-            </Layout>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/report/:id"
-        element={
-          token && user ? (
-            <Layout user={user} onLogout={handleLogout}>
-              <ReportDetailPage token={token} />
             </Layout>
           ) : (
             <Navigate to="/login" replace />
@@ -293,18 +268,6 @@ function App() {
           token && user && user.role === "admin" ? (
             <Layout user={user} onLogout={handleLogout}>
               <AdminUsersPage token={token} />
-            </Layout>
-          ) : (
-            <Navigate to="/audit" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/user/:id"
-        element={
-          token && user && user.role === "admin" ? (
-            <Layout user={user} onLogout={handleLogout}>
-              <AdminUserDetailPage token={token} />
             </Layout>
           ) : (
             <Navigate to="/audit" replace />

@@ -761,10 +761,6 @@ async def get_document_details(
     pages = await get_db().pages.find({"document_id": oid}).sort("page_number", 1).to_list(length=5000)
     report = await get_db().reports.find_one({"document_id": oid})
 
-    # Count pass and fail pages
-    pass_count = sum(1 for p in pages if p.get("status") in ["pass", "manual_pass"])
-    fail_count = sum(1 for p in pages if p.get("status") in ["fail", "manual_fail"])
-    
     serialized_doc = _serialize_document(doc)
     serialized_pages = []
     for page in pages:
@@ -780,13 +776,6 @@ async def get_document_details(
                 "information": page.get("information", []),
                 "summary_text": page.get("summary_text", ""),
                 "auditor_id": str(page.get("auditor_id")),
-                "details": {
-                    "numeric_calc": page.get("numeric_calc", []),
-                    "signatures": page.get("signatures", []),
-                    "dates": page.get("dates", []),
-                    "information": page.get("information", []),
-                    "summary": page.get("summary_text", ""),
-                }
             }
         )
 
@@ -805,15 +794,7 @@ async def get_document_details(
         }
 
     return {
-        "document": {
-            **serialized_doc,
-            "pages": serialized_pages,
-            "summary": {
-                "pass_count": pass_count,
-                "fail_count": fail_count,
-                "total_pages": len(pages),
-            }
-        },
+        "document": serialized_doc,
         "pages": serialized_pages,
         "report": serialized_report,
     }
@@ -952,115 +933,6 @@ async def update_page_status(
     # Update the page status
     result = await get_db().pages.update_one(
         {"document_id": doc_oid, "page_number": page_number},
-        {"$set": {"status": payload.status, "updated_at": datetime.now(timezone.utc)}}
-    )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Page not found")
-    
-    return {"message": "Page status updated", "status": payload.status}
-
-
-@app.get("/api/reports/{report_id}")
-async def get_report_details(
-    report_id: str,
-    current_user: dict[str, Any] = Depends(get_current_user),
-):
-    """Get report details with pages and summary"""
-    if not ObjectId.is_valid(report_id):
-        raise HTTPException(status_code=404, detail="Report not found")
-    
-    report_oid = ObjectId(report_id)
-    report = await get_db().reports.find_one({"_id": report_oid})
-    if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
-    
-    # Get the associated document
-    doc = await get_db().documents.find_one({"_id": report["document_id"]})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Associated document not found")
-    
-    await _authorize_document_access(doc, current_user)
-    
-    # Get all pages for this report's document
-    pages = await get_db().pages.find({"document_id": report["document_id"]}).sort("page_number", 1).to_list(length=5000)
-    
-    serialized_pages = []
-    pass_count = 0
-    fail_count = 0
-    critical_count = 0
-    warnings_count = 0
-    
-    for page in pages:
-        status = page.get("status", "unknown")
-        if status in ["pass", "manual_pass"]:
-            pass_count += 1
-        elif status in ["fail", "manual_fail"]:
-            fail_count += 1
-        
-        # Count critical issues and warnings from page summaries
-        if "critical" in page.get("summary_text", "").lower():
-            critical_count += 1
-        if "warning" in page.get("summary_text", "").lower():
-            warnings_count += 1
-        
-        serialized_pages.append({
-            "page_number": page.get("page_number"),
-            "status": status,
-            "findings": [page.get("summary_text", "")] if page.get("summary_text") else [],
-        })
-    
-    return {
-        "report": {
-            "id": str(report["_id"]),
-            "document_filename": doc.get("filename", ""),
-            "report_data": report.get("summary_text", ""),
-            "status": "completed",
-            "created_at": report.get("created_at").isoformat()
-            if isinstance(report.get("created_at"), datetime)
-            else report.get("created_at"),
-            "pages": serialized_pages,
-            "summary": {
-                "pass_count": pass_count,
-                "fail_count": fail_count,
-                "total_pages": len(pages),
-                "critical_issues": critical_count,
-                "warnings": warnings_count,
-            }
-        }
-    }
-
-
-@app.put("/api/reports/{report_id}/page/{page_number}/status")
-async def update_report_page_status(
-    report_id: str,
-    page_number: int,
-    payload: PageStatusUpdateRequest,
-    current_user: dict[str, Any] = Depends(get_current_user),
-):
-    """Update the manual status of a report page (manual_pass or manual_fail)"""
-    if not ObjectId.is_valid(report_id):
-        raise HTTPException(status_code=404, detail="Report not found")
-    
-    report_oid = ObjectId(report_id)
-    report = await get_db().reports.find_one({"_id": report_oid})
-    if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
-    
-    # Get the associated document to check authorization
-    doc = await get_db().documents.find_one({"_id": report["document_id"]})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Associated document not found")
-    
-    await _authorize_document_access(doc, current_user)
-    
-    # Validate status
-    if payload.status not in ["pass", "fail", "manual_pass", "manual_fail"]:
-        raise HTTPException(status_code=400, detail="Invalid status. Must be: pass, fail, manual_pass, or manual_fail")
-    
-    # Update the page status using the document_id from the report
-    result = await get_db().pages.update_one(
-        {"document_id": report["document_id"], "page_number": page_number},
         {"$set": {"status": payload.status, "updated_at": datetime.now(timezone.utc)}}
     )
     
