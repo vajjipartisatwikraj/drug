@@ -13,6 +13,7 @@ import {
 interface AuditPreviewProps {
   markdown: string;
   isStreaming?: boolean;
+  showPages?: boolean;
 }
 
 type DisplayStatus = PageStatus | "processing";
@@ -426,8 +427,18 @@ function renderFreeformSection(section: AuditSection, key: string) {
 }
 
 // ── Main export ──────────────────────────────────────────────────────────────
-export function AuditPreview({ markdown, isStreaming }: AuditPreviewProps) {
+export function AuditPreview({
+  markdown,
+  isStreaming,
+  showPages = true,
+}: AuditPreviewProps) {
   const sections = useMemo(() => splitAuditMarkdown(markdown), [markdown]);
+  const filteredSections = useMemo(() => {
+    if (showPages) {
+      return sections;
+    }
+    return sections.filter((section) => section.type !== "page");
+  }, [sections, showPages]);
 
   if (!markdown) {
     if (isStreaming) {
@@ -493,7 +504,7 @@ export function AuditPreview({ markdown, isStreaming }: AuditPreviewProps) {
     );
   }
 
-  const hasStructuredSections = sections.some(
+  const hasStructuredSections = filteredSections.some(
     (section) => section.type !== "other",
   );
 
@@ -512,7 +523,7 @@ export function AuditPreview({ markdown, isStreaming }: AuditPreviewProps) {
     <div
       className={`markdown-preview ${isStreaming ? "streaming-cursor" : ""} space-y-5`}
     >
-      {sections.map((section, index) => {
+      {filteredSections.map((section, index) => {
         if (section.type === "tableSection") {
           return renderTableSection(section);
         }

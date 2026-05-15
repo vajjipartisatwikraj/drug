@@ -20,7 +20,7 @@ import uvicorn as _uvicorn
 from bson import ObjectId
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from starlette.websockets import WebSocketState
@@ -31,7 +31,7 @@ from db import get_db
 from gemini_service import audit_service
 from local_math_server import math_app
 from math_api_service import math_api_service
-from models import AdminModel, AuditorModel, DocumentModel, PageModel, ReportModel, UserRole
+from models import AdminModel, AuditorModel, DocumentModel, PageIssueModel, PageIssueStatus, PageModel, ReportModel, UserRole
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Logging
@@ -93,6 +93,17 @@ class CreateAuditorRequest(BaseModel):
 
 class PageStatusUpdateRequest(BaseModel):
     status: str
+    reason: str | None = None
+
+
+class CreatePageIssueRequest(BaseModel):
+    reason: str = Field(min_length=3, max_length=2000)
+    severity: str = Field(default="medium", max_length=32)
+
+
+class ResolvePageIssueRequest(BaseModel):
+    status: str
+    notes: str | None = Field(default=None, max_length=2000)
 
 
 def _utc_now_iso() -> str:
@@ -139,17 +150,33 @@ def _parse_page_sections(markdown: str) -> list[tuple[int, str]]:
 
 
 def _extract_page_status(section_text: str) -> str:
-    m = re.search(r"Status\s*:\s*([A-Za-z/ -]+)", section_text, flags=re.IGNORECASE)
-    if not m:
-        return "unknown"
-    status = m.group(1).strip().upper()
-    if "PASS" in status:
-        return "pass"
-    if "FAIL" in status:
+    # Match patterns like "* **Status:** PASS" or "Status: PASS" or table rows.
+    normalized_text = re.sub(r"<[^>]+>", " ", section_text)
+    patterns = [
+        r"(?:^|\n)\s*(?:[-*]\s*)?\*{0,2}Status\*{0,2}(?:\s*\([^)]+\))?\s*[:\-]\s*(?:[^A-Za-z0-9\n]{0,8}\s*)?\*{0,2}(PASS|FAIL|VOIDED|VOID|N\/A|NA)\*{0,2}\b",
+        r"(?:^|\n)\s*Status(?:\s*\([^)]+\))?\s+(PASS|FAIL|VOIDED|VOID|N\/A|NA)\b",
+        r"\|\s*Status(?:\s*\([^)]+\))?\s*\|\s*(?:[^A-Za-z0-9\n]{0,3}\s*)?\*{0,2}(PASS|FAIL|VOIDED|VOID|N\/A|NA)\*{0,2}\b",
+        r"(?:^|\n)\s*(?:[-*]\s*)?\*{0,2}(PASS|FAIL|VOIDED|VOID|N\/A|NA)\*{0,2}\s*$",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, normalized_text, flags=re.IGNORECASE | re.MULTILINE)
+        if not match:
+            continue
+        status = match.group(1).strip().upper()
+        if status == "PASS":
+            return "pass"
+        if status == "FAIL":
+            return "fail"
+        if status.startswith("VOID"):
+            return "void"
+        if status in {"N/A", "NA"}:
+            return "na"
+
+    if re.search(r"(?:^|\n)\s*\*{0,2}Fail Reason\*{0,2}\s*:", normalized_text, flags=re.IGNORECASE):
         return "fail"
-    if "VOID" in status:
-        return "void"
-    return status.lower()
+
+    return "unknown"
 
 
 def _extract_signature_lines(section_text: str) -> list[str]:
@@ -271,6 +298,7 @@ async def _ensure_indexes_and_seed_admin() -> None:
     await db.users.create_index("username", unique=True)
     await db.documents.create_index([("auditor_id", 1), ("created_at", -1)])
     await db.pages.create_index([("document_id", 1), ("page_number", 1)])
+    await db.issues.create_index([("document_id", 1), ("page_number", 1)])
     await db.reports.create_index("document_id", unique=True)
 
     existing = await db.users.find_one({"username": DEFAULT_ADMIN_USERNAME})
@@ -761,19 +789,32 @@ async def get_document_details(
     pages = await get_db().pages.find({"document_id": oid}).sort("page_number", 1).to_list(length=5000)
     report = await get_db().reports.find_one({"document_id": oid})
 
-    # Count pass and fail pages
-    pass_count = sum(1 for p in pages if p.get("status") in ["pass", "manual_pass"])
-    fail_count = sum(1 for p in pages if p.get("status") in ["fail", "manual_fail"])
+    # Count pass and fail pages using derived status when needed
+    def _resolve_status(page: dict[str, Any]) -> str:
+        raw_status = page.get("status") or "unknown"
+        if raw_status != "unknown":
+            return raw_status
+        summary_text = page.get("summary_text", "")
+        if summary_text:
+            return _extract_page_status(summary_text)
+        return "unknown"
+
+    resolved_statuses = [_resolve_status(p) for p in pages]
+    pass_count = sum(1 for s in resolved_statuses if s in ["pass", "manual_pass"])
+    fail_count = sum(1 for s in resolved_statuses if s in ["fail", "manual_fail"])
     
     serialized_doc = _serialize_document(doc)
     serialized_pages = []
-    for page in pages:
+    for page, resolved_status in zip(pages, resolved_statuses):
         serialized_pages.append(
             {
                 "id": str(page["_id"]),
                 "document_id": str(page["document_id"]),
                 "page_number": page.get("page_number"),
-                "status": page.get("status"),
+                "status": resolved_status,
+                "manual_pass_reason": page.get("manual_pass_reason"),
+                "manual_fail_reason": page.get("manual_fail_reason"),
+                "issue_ids": [str(issue_id) for issue_id in page.get("issue_ids", [])],
                 "numeric_calc": page.get("numeric_calc", []),
                 "signatures": page.get("signatures", []),
                 "dates": page.get("dates", []),
@@ -786,6 +827,9 @@ async def get_document_details(
                     "dates": page.get("dates", []),
                     "information": page.get("information", []),
                     "summary": page.get("summary_text", ""),
+                    "manual_pass_reason": page.get("manual_pass_reason"),
+                    "manual_fail_reason": page.get("manual_fail_reason"),
+                    "issue_ids": [str(issue_id) for issue_id in page.get("issue_ids", [])],
                 }
             }
         )
@@ -817,6 +861,27 @@ async def get_document_details(
         "pages": serialized_pages,
         "report": serialized_report,
     }
+
+
+@app.get("/api/documents/{document_id}/pdf")
+async def get_document_pdf(
+    document_id: str,
+    current_user: dict[str, Any] = Depends(get_current_user),
+):
+    if not ObjectId.is_valid(document_id):
+        raise HTTPException(status_code=404, detail="Document not found")
+    oid = ObjectId(document_id)
+    doc = await get_db().documents.find_one({"_id": oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    await _authorize_document_access(doc, current_user)
+
+    fp = Path(doc["file_path"])
+    if not fp.exists():
+        raise HTTPException(status_code=404, detail="PDF file not found")
+
+    filename = doc.get("filename") or f"{document_id}.pdf"
+    return FileResponse(fp, media_type="application/pdf", filename=filename)
 
 
 @app.get("/api/admin/users/details")
@@ -945,20 +1010,171 @@ async def update_page_status(
     
     await _authorize_document_access(doc, current_user)
     
+    if current_user.get("role") == UserRole.ADMIN.value and payload.status in ["manual_pass", "manual_fail"]:
+        raise HTTPException(status_code=403, detail="Admins cannot set manual overrides")
+
     # Validate status is one of the allowed values
-    if payload.status not in ["pass", "fail", "manual_pass", "manual_fail"]:
-        raise HTTPException(status_code=400, detail="Invalid status. Must be: pass, fail, manual_pass, or manual_fail")
+    if payload.status not in ["pass", "fail", "manual_pass", "manual_fail", "auto"]:
+        raise HTTPException(status_code=400, detail="Invalid status. Must be: pass, fail, manual_pass, manual_fail, or auto")
+
+    if payload.status in ["manual_pass", "manual_fail"]:
+        if not payload.reason or not payload.reason.strip():
+            raise HTTPException(status_code=400, detail="Reason is required for manual overrides")
     
     # Update the page status
+    update_fields: dict[str, Any] = {"updated_at": datetime.now(timezone.utc)}
+    resolved_status = payload.status
+    if payload.status == "manual_pass":
+        update_fields["manual_pass_reason"] = payload.reason.strip()
+        update_fields["manual_fail_reason"] = None
+    elif payload.status == "manual_fail":
+        update_fields["manual_fail_reason"] = payload.reason.strip()
+        update_fields["manual_pass_reason"] = None
+    elif payload.status == "auto":
+        page = await get_db().pages.find_one({"document_id": doc_oid, "page_number": page_number})
+        auto_status = _extract_page_status(page.get("summary_text", "")) if page else "unknown"
+        resolved_status = auto_status
+        update_fields["manual_pass_reason"] = None
+        update_fields["manual_fail_reason"] = None
+
+    update_fields["status"] = resolved_status
+
     result = await get_db().pages.update_one(
         {"document_id": doc_oid, "page_number": page_number},
-        {"$set": {"status": payload.status, "updated_at": datetime.now(timezone.utc)}}
+        {"$set": update_fields}
     )
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Page not found")
     
-    return {"message": "Page status updated", "status": payload.status}
+    return {"message": "Page status updated", "status": resolved_status}
+
+
+@app.post("/api/documents/{document_id}/page/{page_number}/issues")
+async def create_page_issue(
+    document_id: str,
+    page_number: int,
+    payload: CreatePageIssueRequest,
+    current_user: dict[str, Any] = Depends(get_current_admin),
+):
+    if not ObjectId.is_valid(document_id):
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc_oid = ObjectId(document_id)
+    doc = await get_db().documents.find_one({"_id": doc_oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    page = await get_db().pages.find_one({"document_id": doc_oid, "page_number": page_number})
+    if not page:
+        raise HTTPException(status_code=404, detail="Page not found")
+
+    issue_model = PageIssueModel(
+        document_id=document_id,
+        page_number=page_number,
+        page_id=str(page["_id"]),
+        reason=payload.reason.strip(),
+        severity=payload.severity.strip().lower(),
+        created_by=str(current_user["_id"]),
+    )
+    issue_doc = issue_model.model_dump()
+    issue_doc["document_id"] = ObjectId(issue_doc["document_id"])
+    issue_doc["page_id"] = ObjectId(issue_doc["page_id"])
+    issue_doc["created_by"] = ObjectId(issue_doc["created_by"])
+    res = await get_db().issues.insert_one(issue_doc)
+
+    await get_db().pages.update_one(
+        {"_id": page["_id"]},
+        {"$addToSet": {"issue_ids": res.inserted_id}},
+    )
+
+    return {
+        "id": str(res.inserted_id),
+        "status": issue_model.status,
+    }
+
+
+@app.get("/api/documents/{document_id}/page/{page_number}/issues")
+async def list_page_issues(
+    document_id: str,
+    page_number: int,
+    current_user: dict[str, Any] = Depends(get_current_user),
+):
+    if not ObjectId.is_valid(document_id):
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc_oid = ObjectId(document_id)
+    doc = await get_db().documents.find_one({"_id": doc_oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    await _authorize_document_access(doc, current_user)
+
+    issues = await get_db().issues.find(
+        {"document_id": doc_oid, "page_number": page_number}
+    ).sort("created_at", -1).to_list(length=2000)
+
+    return {
+        "issues": [
+            {
+                "id": str(issue["_id"]),
+                "reason": issue.get("reason", ""),
+                "severity": issue.get("severity", "medium"),
+                "status": issue.get("status", PageIssueStatus.PENDING.value),
+                "created_by": str(issue.get("created_by")) if issue.get("created_by") else None,
+                "created_at": issue.get("created_at").isoformat()
+                if isinstance(issue.get("created_at"), datetime)
+                else issue.get("created_at"),
+                "resolved_by": str(issue.get("resolved_by")) if issue.get("resolved_by") else None,
+                "resolved_at": issue.get("resolved_at").isoformat()
+                if isinstance(issue.get("resolved_at"), datetime)
+                else issue.get("resolved_at"),
+                "resolution_notes": issue.get("resolution_notes"),
+            }
+            for issue in issues
+        ]
+    }
+
+
+@app.put("/api/documents/{document_id}/page/{page_number}/issues/{issue_id}")
+async def resolve_page_issue(
+    document_id: str,
+    page_number: int,
+    issue_id: str,
+    payload: ResolvePageIssueRequest,
+    current_user: dict[str, Any] = Depends(get_current_user),
+):
+    if current_user.get("role") != UserRole.AUDITOR.value:
+        raise HTTPException(status_code=403, detail="Auditor access required")
+    if not ObjectId.is_valid(document_id) or not ObjectId.is_valid(issue_id):
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    doc_oid = ObjectId(document_id)
+    doc = await get_db().documents.find_one({"_id": doc_oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    await _authorize_document_access(doc, current_user)
+
+    if payload.status not in [PageIssueStatus.RESOLVED.value, PageIssueStatus.REJECTED.value]:
+        raise HTTPException(status_code=400, detail="Invalid status. Must be: resolved or rejected")
+
+    issue_oid = ObjectId(issue_id)
+    issue = await get_db().issues.find_one({"_id": issue_oid, "document_id": doc_oid, "page_number": page_number})
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    if issue.get("status") != PageIssueStatus.PENDING.value:
+        raise HTTPException(status_code=400, detail="Issue is already closed")
+
+    update_fields: dict[str, Any] = {
+        "status": payload.status,
+        "resolved_by": current_user["_id"],
+        "resolved_at": datetime.now(timezone.utc),
+        "resolution_notes": payload.notes.strip() if payload.notes else None,
+    }
+
+    await get_db().issues.update_one({"_id": issue_oid}, {"$set": update_fields})
+
+    return {"message": "Issue updated", "status": payload.status}
 
 
 @app.get("/api/reports/{report_id}")
@@ -1031,6 +1247,40 @@ async def get_report_details(
     }
 
 
+@app.get("/api/reports")
+async def list_reports(
+    limit: int = 50,
+    current_user: dict[str, Any] = Depends(get_current_user),
+):
+    if limit < 1 or limit > 200:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 200")
+
+    doc_query: dict[str, Any] = {}
+    if current_user.get("role") == UserRole.AUDITOR.value:
+        doc_query["auditor_id"] = current_user["_id"]
+
+    docs = await get_db().documents.find(doc_query).to_list(length=20000)
+    doc_map = {doc["_id"]: doc for doc in docs}
+    report_docs = await get_db().reports.find({"document_id": {"$in": list(doc_map.keys())}}).sort("created_at", -1).limit(limit).to_list(length=limit)
+
+    return {
+        "reports": [
+            {
+                "id": str(report["_id"]),
+                "document_id": str(report.get("document_id")),
+                "document_filename": doc_map.get(report.get("document_id"), {}).get("filename", ""),
+                "status": "completed",
+                "created_at": report.get("created_at").isoformat()
+                if isinstance(report.get("created_at"), datetime)
+                else report.get("created_at"),
+                "total_passed": report.get("total_passed", 0),
+                "total_failed": report.get("total_failed", 0),
+            }
+            for report in report_docs
+        ]
+    }
+
+
 @app.put("/api/reports/{report_id}/page/{page_number}/status")
 async def update_report_page_status(
     report_id: str,
@@ -1054,20 +1304,44 @@ async def update_report_page_status(
     
     await _authorize_document_access(doc, current_user)
     
+    if current_user.get("role") == UserRole.ADMIN.value and payload.status in ["manual_pass", "manual_fail"]:
+        raise HTTPException(status_code=403, detail="Admins cannot set manual overrides")
+
     # Validate status
-    if payload.status not in ["pass", "fail", "manual_pass", "manual_fail"]:
-        raise HTTPException(status_code=400, detail="Invalid status. Must be: pass, fail, manual_pass, or manual_fail")
+    if payload.status not in ["pass", "fail", "manual_pass", "manual_fail", "auto"]:
+        raise HTTPException(status_code=400, detail="Invalid status. Must be: pass, fail, manual_pass, manual_fail, or auto")
+
+    if payload.status in ["manual_pass", "manual_fail"]:
+        if not payload.reason or not payload.reason.strip():
+            raise HTTPException(status_code=400, detail="Reason is required for manual overrides")
     
     # Update the page status using the document_id from the report
+    update_fields: dict[str, Any] = {"updated_at": datetime.now(timezone.utc)}
+    resolved_status = payload.status
+    if payload.status == "manual_pass":
+        update_fields["manual_pass_reason"] = payload.reason.strip()
+        update_fields["manual_fail_reason"] = None
+    elif payload.status == "manual_fail":
+        update_fields["manual_fail_reason"] = payload.reason.strip()
+        update_fields["manual_pass_reason"] = None
+    elif payload.status == "auto":
+        page = await get_db().pages.find_one({"document_id": report["document_id"], "page_number": page_number})
+        auto_status = _extract_page_status(page.get("summary_text", "")) if page else "unknown"
+        resolved_status = auto_status
+        update_fields["manual_pass_reason"] = None
+        update_fields["manual_fail_reason"] = None
+
+    update_fields["status"] = resolved_status
+
     result = await get_db().pages.update_one(
         {"document_id": report["document_id"], "page_number": page_number},
-        {"$set": {"status": payload.status, "updated_at": datetime.now(timezone.utc)}}
+        {"$set": update_fields}
     )
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Page not found")
     
-    return {"message": "Page status updated", "status": payload.status}
+    return {"message": "Page status updated", "status": resolved_status}
 
 
 if __name__ == "__main__":

@@ -1,8 +1,50 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export const ReportsPage: React.FC = () => {
+interface ReportRow {
+  id: string;
+  document_filename: string;
+  status: string;
+  created_at?: string;
+  total_passed?: number;
+  total_failed?: number;
+}
+
+interface ReportsPageProps {
+  token: string;
+}
+
+export const ReportsPage: React.FC<ReportsPageProps> = ({ token }) => {
   const navigate = useNavigate();
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    const loadReports = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch("/api/reports?limit=50", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.detail || "Failed to load reports");
+        if (!cancelled) setReports(payload.reports || []);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load reports");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadReports();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   return (
     <div className="space-y-6">
@@ -34,31 +76,57 @@ export const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <tr
-                  key={i}
-                  className="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors"
-                >
-                  <td className="px-6 py-4 text-sm text-slate-200">REP-{String(i).padStart(5, "0")}</td>
-                  <td className="px-6 py-4 text-sm text-slate-200">BMR_Document_{i}.pdf</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className="px-2 py-1 rounded-full text-xs bg-emerald-600/20 text-emerald-400">
-                      Completed
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-400">
-                    {new Date(Date.now() - i * 86400000).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <button
-                      onClick={() => navigate(`/report/report-${i}`)}
-                      className="text-blue-400 hover:text-blue-300 font-medium"
-                    >
-                      View
-                    </button>
+              {loading && (
+                <tr>
+                  <td className="px-6 py-6 text-sm text-slate-400" colSpan={5}>
+                    Loading reports...
                   </td>
                 </tr>
-              ))}
+              )}
+              {!loading && error && (
+                <tr>
+                  <td className="px-6 py-6 text-sm text-red-400" colSpan={5}>
+                    {error}
+                  </td>
+                </tr>
+              )}
+              {!loading && !error && reports.length === 0 && (
+                <tr>
+                  <td className="px-6 py-6 text-sm text-slate-400" colSpan={5}>
+                    No reports found.
+                  </td>
+                </tr>
+              )}
+              {!loading && !error &&
+                reports.map((report) => (
+                  <tr
+                    key={report.id}
+                    className="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-sm text-slate-200">
+                      {report.id.slice(-6).toUpperCase()}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-200">
+                      {report.document_filename || "-"}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className="px-2 py-1 rounded-full text-xs bg-emerald-600/20 text-emerald-400">
+                        {report.status || "completed"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-400">
+                      {report.created_at ? new Date(report.created_at).toLocaleDateString() : "-"}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <button
+                        onClick={() => navigate(`/report/${report.id}`)}
+                        className="text-blue-400 hover:text-blue-300 font-medium"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

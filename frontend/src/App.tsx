@@ -232,7 +232,7 @@ function App() {
         element={
           token && user ? (
             <Layout user={user} onLogout={handleLogout}>
-              <DocumentDetailPage token={token} />
+              <DocumentDetailPage token={token} user={user} />
             </Layout>
           ) : (
             <Navigate to="/login" replace />
@@ -244,7 +244,7 @@ function App() {
         element={
           token && user ? (
             <Layout user={user} onLogout={handleLogout}>
-              <ReportsPage />
+              <ReportsPage token={token} />
             </Layout>
           ) : (
             <Navigate to="/login" replace />

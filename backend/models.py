@@ -35,6 +35,9 @@ class PageModel(BaseModel):
     document_id: str
     page_number: int
     status: str = "unknown"
+    manual_pass_reason: str | None = None
+    manual_fail_reason: str | None = None
+    issue_ids: list[str] = Field(default_factory=list)
     numeric_calc: list[str] = Field(default_factory=list)
     signatures: list[str] = Field(default_factory=list)
     dates: list[str] = Field(default_factory=list)
@@ -43,6 +46,26 @@ class PageModel(BaseModel):
     auditor_id: str
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime | None = None
+
+
+class PageIssueStatus(str, Enum):
+    PENDING = "pending"
+    RESOLVED = "resolved"
+    REJECTED = "rejected"
+
+
+class PageIssueModel(BaseModel):
+    document_id: str
+    page_number: int
+    page_id: str
+    reason: str
+    severity: str = "medium"
+    status: PageIssueStatus = PageIssueStatus.PENDING
+    created_by: str
+    created_at: datetime = Field(default_factory=utc_now)
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
+    resolution_notes: str | None = None
 
 
 class ReportModel(BaseModel):
