@@ -148,54 +148,51 @@ function TableIcon({ tableNumber }: { tableNumber?: number }) {
 // ── Table section colour accent map ──────────────────────────────────────────
 function tableSectionAccent(tableNumber?: number): string {
   const accents: Record<number, string> = {
-    1: "from-blue-900/40 to-slate-900/60 border-blue-700/40",
-    2: "from-amber-900/30 to-slate-900/60 border-amber-700/40",
-    3: "from-purple-900/30 to-slate-900/60 border-purple-700/40",
-    4: "from-cyan-900/30 to-slate-900/60 border-cyan-700/40",
-    5: "from-orange-900/30 to-slate-900/60 border-orange-700/40",
-    6: "from-red-900/30 to-slate-900/60 border-red-700/40",
-    7: "from-emerald-900/30 to-slate-900/60 border-emerald-700/40",
-    8: "from-indigo-900/40 to-slate-900/60 border-indigo-700/40",
+    1: "surface-soft",
+    2: "surface-soft",
+    3: "surface-soft",
+    4: "surface-soft",
+    5: "surface-soft",
+    6: "surface-soft",
+    7: "surface-soft",
+    8: "surface-soft",
   };
-  return (
-    accents[tableNumber ?? 0] ??
-    "from-slate-800/40 to-slate-900/60 border-slate-700/40"
-  );
+  return accents[tableNumber ?? 0] ?? "surface-soft";
 }
 
 function tableSectionIconColor(tableNumber?: number): string {
   const colors: Record<number, string> = {
-    1: "text-blue-400",
-    2: "text-amber-400",
-    3: "text-purple-400",
-    4: "text-cyan-400",
-    5: "text-orange-400",
-    6: "text-red-400",
-    7: "text-emerald-400",
-    8: "text-indigo-400",
+    1: "text-[var(--color-success)]",
+    2: "text-[var(--color-warning)]",
+    3: "text-[var(--color-text)]",
+    4: "text-[var(--color-text)]",
+    5: "text-[var(--color-warning)]",
+    6: "text-[var(--color-danger)]",
+    7: "text-[var(--color-success)]",
+    8: "text-[var(--color-text)]",
   };
-  return colors[tableNumber ?? 0] ?? "text-slate-400";
+  return colors[tableNumber ?? 0] ?? "text-muted";
 }
 
 // ── Markdown components ────────────────────────────────────────────────────
 const markdownComponents = {
   h1: ({ children }: { children?: React.ReactNode }) => (
-    <h1 className="text-2xl font-bold text-white mb-4 mt-6 pb-2 border-b border-slate-600">
+    <h1 className="text-2xl text-title mb-4 mt-6 pb-2 border-b border-[var(--color-border)]">
       {children}
     </h1>
   ),
   h2: ({ children }: { children?: React.ReactNode }) => (
-    <h2 className="text-xl font-semibold text-blue-300 mb-3 mt-5">
+    <h2 className="text-xl text-heading mb-3 mt-5">
       {children}
     </h2>
   ),
   h3: ({ children }: { children?: React.ReactNode }) => (
-    <h3 className="text-lg font-medium text-emerald-300 mb-2 mt-4">
+    <h3 className="text-lg text-heading mb-2 mt-4">
       {children}
     </h3>
   ),
   h4: ({ children }: { children?: React.ReactNode }) => (
-    <h4 className="text-base font-medium text-amber-300 mb-2 mt-3">
+    <h4 className="text-base text-heading mb-2 mt-3">
       {children}
     </h4>
   ),
@@ -211,22 +208,22 @@ const markdownComponents = {
       return <p {...props} dangerouslySetInnerHTML={{ __html: text }} />;
     }
     return (
-      <p className="mb-3 text-slate-300 leading-relaxed" {...props}>
+      <p className="mb-3 text-muted leading-relaxed" {...props}>
         {children}
       </p>
     );
   },
   strong: ({ children }: { children?: React.ReactNode }) => (
-    <strong className="font-semibold text-white">{children}</strong>
+    <strong className="font-semibold text-title">{children}</strong>
   ),
   em: ({ children }: { children?: React.ReactNode }) => (
-    <em className="italic text-slate-400">{children}</em>
+    <em className="italic text-subtle">{children}</em>
   ),
   ul: ({ children }: { children?: React.ReactNode }) => (
-    <ul className="mb-3 pl-5 text-slate-300 list-disc">{children}</ul>
+    <ul className="mb-3 pl-5 text-muted list-disc">{children}</ul>
   ),
   ol: ({ children }: { children?: React.ReactNode }) => (
-    <ol className="mb-3 pl-5 text-slate-300 list-decimal">{children}</ol>
+    <ol className="mb-3 pl-5 text-muted list-decimal">{children}</ol>
   ),
   li: ({ children }: { children?: React.ReactNode }) => (
     <li className="mb-1">{children}</li>
@@ -244,7 +241,7 @@ const markdownComponents = {
     if (isInline) {
       return (
         <code
-          className="rounded bg-slate-800 px-2 py-0.5 text-amber-400 font-mono text-sm"
+          className="rounded bg-[var(--color-surface-strong)] px-2 py-0.5 text-[var(--color-warning)] font-mono text-sm"
           {...props}
         >
           {children}
@@ -317,37 +314,37 @@ function renderTableSection(section: AuditSection) {
   const iconColor = tableSectionIconColor(section.tableNumber);
 
   return (
-    <section
+    <details
       key={`table-${section.tableNumber}-${section.title}`}
       id={`table-${section.tableNumber}`}
-      className={`overflow-hidden rounded-2xl border bg-gradient-to-br shadow-xl shadow-slate-950/30 ${accent} scroll-mt-6`}
+      className={`audit-table-accordion ${accent} scroll-mt-6`}
     >
-      {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5">
+      <summary className="audit-table-summary">
         <span className={iconColor}>
           <TableIcon tableNumber={section.tableNumber} />
         </span>
-        <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-0.5">
+        <div className="flex-1">
+          <p className="text-xs uppercase tracking-[0.25em] text-subtle mb-0.5">
             {section.tableNumber ? `Table ${section.tableNumber}` : "Section"}
           </p>
-          <h2 className="text-base font-semibold text-white leading-tight">
+          <h2 className="text-base text-heading leading-tight">
             {section.title.replace(/^Table\s+\d+:\s*/i, "")}
           </h2>
         </div>
-      </div>
+        <span className="text-subtle text-sm">View</span>
+      </summary>
 
       {/* Body */}
-      <div className="audit-page-body overflow-x-auto">
+      <div className="audit-table-body overflow-x-auto">
         {section.body ? (
           renderMarkdown(section.body)
         ) : (
-          <p className="text-slate-500 text-sm italic py-2">
+          <p className="text-subtle text-sm italic py-2">
             No data for this section.
           </p>
         )}
       </div>
-    </section>
+    </details>
   );
 }
 

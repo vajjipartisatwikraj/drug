@@ -1177,6 +1177,104 @@ async def resolve_page_issue(
     return {"message": "Issue updated", "status": payload.status}
 
 
+@app.get("/api/auditor/issues")
+async def list_auditor_issues(
+    limit: int = 100,
+    current_user: dict[str, Any] = Depends(get_current_user),
+):
+    if current_user.get("role") != UserRole.AUDITOR.value:
+        raise HTTPException(status_code=403, detail="Auditor access required")
+    if limit < 1 or limit > 200:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 200")
+
+    docs = await get_db().documents.find({"auditor_id": current_user["_id"]}).to_list(length=20000)
+    if not docs:
+        return {"issues": []}
+
+    doc_map = {doc["_id"]: doc for doc in docs}
+    issues = (
+        await get_db()
+        .issues.find({"document_id": {"$in": list(doc_map.keys())}})
+        .sort("created_at", -1)
+        .limit(limit)
+        .to_list(length=limit)
+    )
+
+    return {
+        "issues": [
+            {
+                "id": str(issue["_id"]),
+                "document_id": _serialize_id(issue.get("document_id")),
+                "document_filename": doc_map.get(issue.get("document_id"), {}).get("filename", ""),
+                "page_number": issue.get("page_number"),
+                "reason": issue.get("reason", ""),
+                "severity": issue.get("severity", "medium"),
+                "status": issue.get("status", PageIssueStatus.PENDING.value),
+                "created_at": issue.get("created_at").isoformat()
+                if isinstance(issue.get("created_at"), datetime)
+                else issue.get("created_at"),
+                "resolved_at": issue.get("resolved_at").isoformat()
+                if isinstance(issue.get("resolved_at"), datetime)
+                else issue.get("resolved_at"),
+                "resolution_notes": issue.get("resolution_notes"),
+            }
+            for issue in issues
+        ]
+    }
+
+
+@app.get("/api/admin/issues")
+async def list_admin_issues(
+    limit: int = 200,
+    current_user: dict[str, Any] = Depends(get_current_admin),
+):
+    if limit < 1 or limit > 500:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 500")
+
+    docs = await get_db().documents.find({}).to_list(length=20000)
+    if not docs:
+        return {"issues": []}
+
+    doc_map = {doc["_id"]: doc for doc in docs}
+    auditor_ids = {doc.get("auditor_id") for doc in docs if doc.get("auditor_id")}
+    auditors = await get_db().users.find({"_id": {"$in": list(auditor_ids)}}).to_list(length=20000)
+    auditor_map = {str(auditor["_id"]): auditor.get("username", "") for auditor in auditors}
+
+    issues = (
+        await get_db()
+        .issues.find({"document_id": {"$in": list(doc_map.keys())}})
+        .sort("created_at", -1)
+        .limit(limit)
+        .to_list(length=limit)
+    )
+
+    return {
+        "issues": [
+            {
+                "id": str(issue["_id"]),
+                "document_id": _serialize_id(issue.get("document_id")),
+                "document_filename": doc_map.get(issue.get("document_id"), {}).get("filename", ""),
+                "auditor_username": auditor_map.get(
+                    _serialize_id(doc_map.get(issue.get("document_id"), {}).get("auditor_id", "")),
+                    "",
+                ),
+                "page_number": issue.get("page_number"),
+                "reason": issue.get("reason", ""),
+                "severity": issue.get("severity", "medium"),
+                "status": issue.get("status", PageIssueStatus.PENDING.value),
+                "created_at": issue.get("created_at").isoformat()
+                if isinstance(issue.get("created_at"), datetime)
+                else issue.get("created_at"),
+                "resolved_at": issue.get("resolved_at").isoformat()
+                if isinstance(issue.get("resolved_at"), datetime)
+                else issue.get("resolved_at"),
+                "resolution_notes": issue.get("resolution_notes"),
+            }
+            for issue in issues
+        ]
+    }
+
+
 @app.get("/api/reports/{report_id}")
 async def get_report_details(
     report_id: str,

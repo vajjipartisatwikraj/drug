@@ -9,9 +9,11 @@ import { ReportsPage } from "./pages/user/ReportsPage";
 import { ReportDetailPage } from "./pages/user/ReportDetailPage";
 import { SettingsPage } from "./pages/user/SettingsPage";
 import { ProfilePage } from "./pages/user/ProfilePage";
+import { IssuesPage } from "./pages/user/IssuesPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
 import { AdminDocsPage } from "./pages/admin/AdminDocsPage";
+import { AdminIssuesPage } from "./pages/admin/AdminIssuesPage";
 
 type Role = "admin" | "auditor";
 type AppPage = "audit" | "admin-users" | "admin-docs";
@@ -252,6 +254,18 @@ function App() {
         }
       />
       <Route
+        path="/issues"
+        element={
+          token && user && user.role === "auditor" ? (
+            <Layout user={user} onLogout={handleLogout}>
+              <IssuesPage token={token} />
+            </Layout>
+          ) : (
+            <Navigate to="/audit" replace />
+          )
+        }
+      />
+      <Route
         path="/report/:id"
         element={
           token && user ? (
@@ -317,6 +331,18 @@ function App() {
           token && user && user.role === "admin" ? (
             <Layout user={user} onLogout={handleLogout}>
               <AdminDocsPage token={token} />
+            </Layout>
+          ) : (
+            <Navigate to="/audit" replace />
+          )
+        }
+      />
+      <Route
+        path="/admin-issues"
+        element={
+          token && user && user.role === "admin" ? (
+            <Layout user={user} onLogout={handleLogout}>
+              <AdminIssuesPage token={token} />
             </Layout>
           ) : (
             <Navigate to="/audit" replace />

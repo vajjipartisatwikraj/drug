@@ -4,13 +4,13 @@ export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-slate-800/60 border-t border-slate-700 mt-auto">
+    <footer className="surface-strong border-t border-[var(--color-border)] mt-auto">
       <div className="px-6 py-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Company Info */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
+              <div className="w-6 h-6 rounded-lg bg-[var(--color-success)] flex items-center justify-center">
                 <svg
                   className="w-4 h-4 text-white"
                   fill="none"
@@ -25,21 +25,21 @@ export const Footer: React.FC = () => {
                   />
                 </svg>
               </div>
-              <span className="font-semibold text-white">DrugAudit</span>
+              <span className="font-semibold text-title">DrugAudit</span>
             </div>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted">
               Intelligent Drug Analysis & Compliance System
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold text-white mb-3 text-sm">Quick Links</h3>
+            <h3 className="font-semibold text-title mb-3 text-sm">Quick Links</h3>
             <ul className="space-y-2">
               <li>
                 <a
                   href="#"
-                  className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-sm text-muted hover:text-[var(--color-text)] transition-colors"
                 >
                   Dashboard
                 </a>
@@ -47,7 +47,7 @@ export const Footer: React.FC = () => {
               <li>
                 <a
                   href="#"
-                  className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-sm text-muted hover:text-[var(--color-text)] transition-colors"
                 >
                   Documents
                 </a>
@@ -55,7 +55,7 @@ export const Footer: React.FC = () => {
               <li>
                 <a
                   href="#"
-                  className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-sm text-muted hover:text-[var(--color-text)] transition-colors"
                 >
                   Reports
                 </a>
@@ -65,12 +65,12 @@ export const Footer: React.FC = () => {
 
           {/* Support */}
           <div>
-            <h3 className="font-semibold text-white mb-3 text-sm">Support</h3>
+            <h3 className="font-semibold text-title mb-3 text-sm">Support</h3>
             <ul className="space-y-2">
               <li>
                 <a
                   href="#"
-                  className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-sm text-muted hover:text-[var(--color-text)] transition-colors"
                 >
                   Help Center
                 </a>
@@ -78,7 +78,7 @@ export const Footer: React.FC = () => {
               <li>
                 <a
                   href="#"
-                  className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-sm text-muted hover:text-[var(--color-text)] transition-colors"
                 >
                   Documentation
                 </a>
@@ -86,7 +86,7 @@ export const Footer: React.FC = () => {
               <li>
                 <a
                   href="#"
-                  className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-sm text-muted hover:text-[var(--color-text)] transition-colors"
                 >
                   Contact Us
                 </a>
@@ -96,12 +96,12 @@ export const Footer: React.FC = () => {
 
           {/* Legal */}
           <div>
-            <h3 className="font-semibold text-white mb-3 text-sm">Legal</h3>
+            <h3 className="font-semibold text-title mb-3 text-sm">Legal</h3>
             <ul className="space-y-2">
               <li>
                 <a
                   href="#"
-                  className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-sm text-muted hover:text-[var(--color-text)] transition-colors"
                 >
                   Privacy Policy
                 </a>
@@ -109,7 +109,7 @@ export const Footer: React.FC = () => {
               <li>
                 <a
                   href="#"
-                  className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-sm text-muted hover:text-[var(--color-text)] transition-colors"
                 >
                   Terms of Service
                 </a>
@@ -117,7 +117,7 @@ export const Footer: React.FC = () => {
               <li>
                 <a
                   href="#"
-                  className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-sm text-muted hover:text-[var(--color-text)] transition-colors"
                 >
                   Compliance
                 </a>
@@ -127,16 +127,16 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-slate-700/50 pt-6">
+        <div className="border-t border-[var(--color-border)] pt-6">
           <div className="flex flex-col md:flex-row items-center justify-between">
-            <p className="text-xs text-slate-500 text-center md:text-left">
+            <p className="text-xs text-subtle text-center md:text-left">
               © {currentYear} DrugAudit. All rights reserved. | Made with ❤️
               for regulatory compliance
             </p>
             <div className="flex items-center gap-4 mt-4 md:mt-0">
               <a
                 href="#"
-                className="text-slate-500 hover:text-blue-400 transition-colors"
+                className="text-subtle hover:text-[var(--color-text)] transition-colors"
                 aria-label="Twitter"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -145,7 +145,7 @@ export const Footer: React.FC = () => {
               </a>
               <a
                 href="#"
-                className="text-slate-500 hover:text-blue-400 transition-colors"
+                className="text-subtle hover:text-[var(--color-text)] transition-colors"
                 aria-label="LinkedIn"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">

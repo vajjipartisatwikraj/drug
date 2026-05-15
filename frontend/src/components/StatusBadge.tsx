@@ -6,7 +6,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   const configs = {
     idle: {
       label: "Ready",
-      className: "bg-slate-600/30 text-slate-400 border-slate-600",
+      className: "badge-neutral",
       icon: (
         <svg
           className="w-4 h-4"
@@ -25,7 +25,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     },
     uploading: {
       label: "Uploading...",
-      className: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      className: "badge-warning",
       icon: (
         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle
@@ -46,7 +46,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     },
     processing: {
       label: "Processing...",
-      className: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+      className: "badge-warning",
       icon: (
         <svg
           className="w-4 h-4 animate-pulse"
@@ -65,7 +65,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     },
     completed: {
       label: "Completed",
-      className: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+      className: "badge-success",
       icon: (
         <svg
           className="w-4 h-4"
@@ -84,7 +84,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     },
     error: {
       label: "Error",
-      className: "bg-red-500/20 text-red-400 border-red-500/30",
+      className: "badge-danger",
       icon: (
         <svg
           className="w-4 h-4"

@@ -49,87 +49,85 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ token }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Reports</h1>
-        <p className="text-slate-400">View and manage audit reports</p>
+        <h1 className="text-3xl text-title mb-2">Reports</h1>
+        <p className="text-muted">View and manage audit reports</p>
       </div>
 
-      <div className="rounded-lg border border-slate-700 bg-slate-800/50 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-700 bg-slate-800/80">
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">
-                  Report ID
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">
-                  Document
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">
-                  Action
-                </th>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[var(--color-border)]">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-body">
+                Report ID
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-body">
+                Document
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-body">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-body">
+                Date
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-body">
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr>
+                <td className="px-6 py-6 text-sm text-muted" colSpan={5}>
+                  Loading reports...
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td className="px-6 py-6 text-sm text-slate-400" colSpan={5}>
-                    Loading reports...
+            )}
+            {!loading && error && (
+              <tr>
+                <td className="px-6 py-6 text-sm text-[var(--color-danger)]" colSpan={5}>
+                  {error}
+                </td>
+              </tr>
+            )}
+            {!loading && !error && reports.length === 0 && (
+              <tr>
+                <td className="px-6 py-6 text-sm text-muted" colSpan={5}>
+                  No reports found.
+                </td>
+              </tr>
+            )}
+            {!loading && !error &&
+              reports.map((report) => (
+                <tr
+                  key={report.id}
+                  className="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-strong)] transition-colors"
+                >
+                  <td className="px-6 py-4 text-sm text-body">
+                    {report.id.slice(-6).toUpperCase()}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-body">
+                    {report.document_filename || "-"}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <span className="px-2 py-1 rounded-full text-xs badge-success">
+                      {report.status || "completed"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-muted">
+                    {report.created_at ? new Date(report.created_at).toLocaleDateString() : "-"}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <button
+                      onClick={() => navigate(`/report/${report.id}`)}
+                      className="text-[var(--color-success)] hover:text-[var(--color-text)] font-medium"
+                    >
+                      View
+                    </button>
                   </td>
                 </tr>
-              )}
-              {!loading && error && (
-                <tr>
-                  <td className="px-6 py-6 text-sm text-red-400" colSpan={5}>
-                    {error}
-                  </td>
-                </tr>
-              )}
-              {!loading && !error && reports.length === 0 && (
-                <tr>
-                  <td className="px-6 py-6 text-sm text-slate-400" colSpan={5}>
-                    No reports found.
-                  </td>
-                </tr>
-              )}
-              {!loading && !error &&
-                reports.map((report) => (
-                  <tr
-                    key={report.id}
-                    className="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-sm text-slate-200">
-                      {report.id.slice(-6).toUpperCase()}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-200">
-                      {report.document_filename || "-"}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className="px-2 py-1 rounded-full text-xs bg-emerald-600/20 text-emerald-400">
-                        {report.status || "completed"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-400">
-                      {report.created_at ? new Date(report.created_at).toLocaleDateString() : "-"}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <button
-                        onClick={() => navigate(`/report/${report.id}`)}
-                        className="text-blue-400 hover:text-blue-300 font-medium"
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
+              ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

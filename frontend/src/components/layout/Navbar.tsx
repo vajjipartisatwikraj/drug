@@ -15,11 +15,11 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   const [notificationCount] = useState(3);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 bg-slate-800/80 border-b border-slate-700 backdrop-blur-sm z-40">
+    <nav className="fixed top-0 left-0 right-0 h-16 surface-strong backdrop-blur-sm z-40">
       <div className="h-full px-6 flex items-center justify-between">
         {/* Left Section - Logo/Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-[var(--color-success)] flex items-center justify-center">
             <svg
               className="w-5 h-5 text-white"
               fill="none"
@@ -34,13 +34,13 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               />
             </svg>
           </div>
-          <h1 className="text-lg font-semibold text-white">DrugAudit</h1>
+          <h1 className="text-lg text-title">DrugAudit</h1>
         </div>
 
         {/* Right Section - Icons & User Menu */}
         <div className="flex items-center gap-4">
           {/* Search Icon */}
-          <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 hover:text-white">
+          <button className="p-2 btn-ghost">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -58,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
 
           {/* Notifications Icon */}
           <div className="relative">
-            <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 hover:text-white relative">
+            <button className="p-2 btn-ghost relative">
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -73,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
                 />
               </svg>
               {notificationCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--color-danger)] rounded-full" />
               )}
             </button>
           </div>
@@ -82,12 +82,12 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
           <div className="relative">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 hover:text-white flex items-center gap-2"
+              className="p-2 btn-ghost flex items-center gap-2"
             >
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white text-xs font-semibold">
+              <div className="w-6 h-6 rounded-full bg-[var(--color-success)] flex items-center justify-center text-xs font-semibold text-[#0b1a1d]">
                 {user?.username?.charAt(0).toUpperCase() || "U"}
               </div>
-              <span className="text-sm text-slate-300">{user?.username || "User"}</span>
+              <span className="text-sm text-body">{user?.username || "User"}</span>
               <svg
                 className={`w-4 h-4 transition-transform ${showProfileMenu ? "rotate-180" : ""}`}
                 fill="none"
@@ -105,12 +105,12 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
 
             {/* Profile Dropdown */}
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-48 rounded-lg border border-slate-600 bg-slate-800 shadow-lg">
-                <div className="px-4 py-3 border-b border-slate-700">
-                  <p className="text-sm text-slate-300">
+              <div className="absolute right-0 mt-2 w-48 card-shell">
+                <div className="px-4 py-3 border-b border-[var(--color-border)]">
+                  <p className="text-sm text-body">
                     {user?.username || "Guest User"}
                   </p>
-                  <p className="text-xs text-slate-500 uppercase">
+                  <p className="text-xs text-subtle uppercase">
                     {user?.role || "user"}
                   </p>
                 </div>
@@ -119,7 +119,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
                     setShowProfileMenu(false);
                     navigate("/profile");
                   }}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                  className="w-full text-left px-4 py-2 text-sm btn-ghost"
                 >
                   Profile Settings
                 </button>
@@ -129,7 +129,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
                     // Handle logout
                     if (onLogout) onLogout();
                   }}
-                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors border-t border-slate-700"
+                  className="w-full text-left px-4 py-2 text-sm btn-ghost btn-danger"
                 >
                   Logout
                 </button>

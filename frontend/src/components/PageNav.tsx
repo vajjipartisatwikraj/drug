@@ -23,17 +23,17 @@ interface TableInfo {
 function statusClass(status: PageInfo["status"]): string {
   switch (status) {
     case "pass":
-      return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+      return "badge-success";
     case "fail":
-      return "bg-red-500/20 text-red-400 border-red-500/30";
+      return "badge-danger";
     case "void":
-      return "bg-amber-500/20 text-amber-300 border-amber-500/30";
+      return "badge-warning";
     case "na":
-      return "bg-slate-500/20 text-slate-300 border-slate-500/30";
+      return "badge-neutral";
     case "processing":
-      return "bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse";
+      return "badge-warning animate-pulse";
     default:
-      return "bg-slate-700/50 text-slate-400 border-slate-600";
+      return "badge-neutral";
   }
 }
 
@@ -55,20 +55,20 @@ function statusLabel(status: PageInfo["status"]): string {
 }
 
 const TABLE_COLORS: Record<number, string> = {
-  1: "bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25",
-  2: "bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25",
-  3: "bg-purple-500/15 text-purple-300 border-purple-500/30 hover:bg-purple-500/25",
-  4: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25",
-  5: "bg-orange-500/15 text-orange-300 border-orange-500/30 hover:bg-orange-500/25",
-  6: "bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/25",
-  7: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25",
-  8: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25",
+  1: "surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]",
+  2: "surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]",
+  3: "surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]",
+  4: "surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]",
+  5: "surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]",
+  6: "surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]",
+  7: "surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]",
+  8: "surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]",
 };
 
 function tableColor(n: number): string {
   return (
     TABLE_COLORS[n] ??
-    "bg-slate-700/30 text-slate-400 border-slate-600 hover:bg-slate-700/50"
+    "surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]"
   );
 }
 
@@ -118,11 +118,11 @@ export function PageNav({ markdown, status }: PageNavProps) {
   const voidCount = pages.filter((p) => p.status === "void").length;
 
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-4 shadow-lg shadow-slate-950/20 space-y-4">
+    <div className="rounded-2xl surface p-4 space-y-4">
       {/* ── Table sections navigation ───────────────────────────────── */}
       {tables.length > 0 && (
         <div>
-          <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          <h3 className="flex items-center gap-2 text-xs font-semibold text-subtle uppercase tracking-wider mb-2">
             <svg
               className="w-3.5 h-3.5"
               fill="none"
@@ -154,7 +154,7 @@ export function PageNav({ markdown, status }: PageNavProps) {
             {hasSummary && (
               <button
                 onClick={() => scrollTo("final-summary")}
-                className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-150 bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25"
+                className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-150 surface-soft text-body border-[var(--color-border)] hover:bg-[var(--color-surface-strong)]"
               >
                 <span className="font-mono font-bold shrink-0">∑</span>
                 <span>Final Summary</span>
@@ -168,7 +168,7 @@ export function PageNav({ markdown, status }: PageNavProps) {
       {pages.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <h3 className="flex items-center gap-2 text-xs font-semibold text-subtle uppercase tracking-wider">
               <svg
                 className="w-3.5 h-3.5"
                 fill="none"
@@ -188,16 +188,16 @@ export function PageNav({ markdown, status }: PageNavProps) {
 
           {/* Status counts */}
           <div className="flex flex-wrap gap-1.5 mb-2 text-xs">
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-emerald-300">
+            <span className="rounded-full px-2 py-0.5 badge-success">
               {passCount} Pass
             </span>
-            <span className="rounded-full border border-red-500/30 bg-red-500/15 px-2 py-0.5 text-red-300">
+            <span className="rounded-full px-2 py-0.5 badge-danger">
               {failCount} Fail
             </span>
-            <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-amber-300">
+            <span className="rounded-full px-2 py-0.5 badge-warning">
               {voidCount} Void
             </span>
-            <span className="rounded-full border border-slate-600 bg-slate-700/40 px-2 py-0.5 text-slate-300">
+            <span className="rounded-full px-2 py-0.5 badge-neutral">
               {pages.length} Total
             </span>
           </div>

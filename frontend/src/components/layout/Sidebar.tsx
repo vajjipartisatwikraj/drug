@@ -7,6 +7,7 @@ interface NavItem {
   path: string;
   badge?: string;
   adminOnly?: boolean;
+  roles?: Array<"admin" | "auditor">;
 }
 
 interface SidebarProps {
@@ -78,6 +79,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole = "auditor", isExpand
       path: "/reports",
     },
     {
+      label: "Issues",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01M12 3l9.5 16.5h-19L12 3z"
+          />
+        </svg>
+      ),
+      path: "/issues",
+      roles: ["auditor"],
+    },
+    {
       label: "Users",
       icon: (
         <svg
@@ -96,6 +117,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole = "auditor", isExpand
       ),
       path: "/admin-users",
       adminOnly: true,
+    },
+    {
+      label: "Issues",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 8h10M7 12h6m-6 4h10M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"
+          />
+        </svg>
+      ),
+      path: "/admin-issues",
+      roles: ["admin"],
     },
     {
       label: "Settings",
@@ -125,14 +166,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole = "auditor", isExpand
   ];
 
   const filteredItems = navItems.filter(
-    (item) => !item.adminOnly || userRole === "admin"
+    (item) => {
+      if (item.roles && !item.roles.includes(userRole as "admin" | "auditor")) {
+        return false;
+      }
+      return !item.adminOnly || userRole === "admin";
+    }
   );
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <aside
-      className={`fixed left-0 top-16 bottom-0 bg-slate-800/90 border-r border-slate-700 transition-all duration-300 ease-in-out z-30 ${
+      className={`fixed left-0 top-16 bottom-0 surface-strong transition-all duration-300 ease-in-out z-30 ${
         isExpanded ? "w-64" : "w-20"
       }`}
       onMouseEnter={() => setIsExpanded(true)}
@@ -146,9 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole = "auditor", isExpand
               key={item.path}
               onClick={() => navigate(item.path)}
               className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 group ${
-                isActive(item.path)
-                  ? "bg-blue-600/20 text-blue-400 border border-blue-600/30"
-                  : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                isActive(item.path) ? "nav-item-active" : "nav-item"
               }`}
               title={!isExpanded ? item.label : ""}
             >
@@ -160,7 +204,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole = "auditor", isExpand
               >
                 {item.label}
                 {item.badge && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-red-500/20 text-red-400 rounded-full">
+                  <span className="ml-2 px-2 py-1 text-xs rounded-full badge-danger">
                     {item.badge}
                   </span>
                 )}
@@ -170,9 +214,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole = "auditor", isExpand
         </nav>
 
         {/* Expand/Collapse Indicator */}
-        <div className="pt-4 border-t border-slate-700/50">
+        <div className="pt-4 border-t border-[var(--color-border)]">
           <div
-            className={`text-xs text-slate-500 text-center transition-all duration-200 ${
+            className={`text-xs text-subtle text-center transition-all duration-200 ${
               isExpanded ? "opacity-100" : "opacity-0"
             }`}
           >

@@ -278,24 +278,24 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
 
   const detailMarkdownComponents = {
     h1: ({ children }: { children?: React.ReactNode }) => (
-      <h1 className="text-xl font-semibold text-white mb-2">{children}</h1>
+      <h1 className="text-xl text-title mb-2">{children}</h1>
     ),
     h2: ({ children }: { children?: React.ReactNode }) => (
-      <h2 className="text-lg font-semibold text-emerald-300 mt-4 mb-2">{children}</h2>
+      <h2 className="text-lg text-heading mt-4 mb-2">{children}</h2>
     ),
     h3: ({ children }: { children?: React.ReactNode }) => (
-      <h3 className="text-base font-semibold text-sky-300 mt-3 mb-2">{children}</h3>
+      <h3 className="text-base text-heading mt-3 mb-2">{children}</h3>
     ),
     p: ({ children }: { children?: React.ReactNode }) => (
-      <p className="text-sm text-slate-200 leading-relaxed mb-2">{children}</p>
+      <p className="text-sm text-muted leading-relaxed mb-2">{children}</p>
     ),
     ul: ({ children }: { children?: React.ReactNode }) => (
-      <ul className="space-y-1.5 text-sm text-slate-200 list-disc pl-5 mb-2">
+      <ul className="space-y-1.5 text-sm text-muted list-disc pl-5 mb-2">
         {children}
       </ul>
     ),
     ol: ({ children }: { children?: React.ReactNode }) => (
-      <ol className="space-y-1.5 text-sm text-slate-200 list-decimal pl-5 mb-2">
+      <ol className="space-y-1.5 text-sm text-muted list-decimal pl-5 mb-2">
         {children}
       </ol>
     ),
@@ -303,7 +303,7 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
       <li className="leading-relaxed">{children}</li>
     ),
     strong: ({ children }: { children?: React.ReactNode }) => (
-      <strong className="text-white font-semibold">{children}</strong>
+      <strong className="text-title font-semibold">{children}</strong>
     ),
   };
 
@@ -407,9 +407,9 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
     }
   };
 
-  if (loading) return <div className="text-slate-300 text-center py-8">Loading document...</div>;
-  if (error) return <div className="text-red-400 text-center py-8">{error}</div>;
-  if (!document) return <div className="text-slate-300 text-center py-8">Document not found</div>;
+  if (loading) return <div className="text-muted text-center py-8">Loading document...</div>;
+  if (error) return <div className="text-[var(--color-danger)] text-center py-8">{error}</div>;
+  if (!document) return <div className="text-muted text-center py-8">Document not found</div>;
 
   const manualPassCount = document.pages?.filter((p) => p.status === "manual_pass").length || 0;
   const manualFailCount = document.pages?.filter((p) => p.status === "manual_fail").length || 0;
@@ -417,58 +417,75 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
   const totalFailCount = (document.summary?.fail_count || 0) + manualFailCount;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div>
-        <button onClick={() => navigate(-1)} className="mb-4 text-blue-400 hover:text-blue-300">
-          ← Back
+      <div className="flex items-start justify-between gap-6">
+        <div>
+          <p className="text-sm text-subtle">Document View</p>
+          <h1 className="text-3xl text-title mt-1">{document.filename}</h1>
+          <p className="text-sm text-muted">Document ID: {id}</p>
+        </div>
+        <button
+          onClick={() => navigate(-1)}
+          className="btn-primary px-3 py-2 text-sm"
+          aria-label="Back"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
         </button>
-        <h1 className="text-3xl font-bold text-white mb-2">{document.filename}</h1>
-        <p className="text-slate-400">Document ID: {id}</p>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <p className="text-sm text-slate-400">Total Pages</p>
-          <p className="text-3xl font-bold text-white mt-2">{document.summary?.total_pages || 0}</p>
+        <div className="card-shell p-4">
+          <p className="text-xs text-subtle uppercase tracking-[0.2em]">Total Pages</p>
+          <p className="text-2xl text-title mt-3">{document.summary?.total_pages || 0}</p>
+          <p className="text-xs text-muted mt-1">Audited</p>
         </div>
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <p className="text-sm text-slate-400">Pass Pages</p>
-          <p className="text-3xl font-bold text-emerald-400 mt-2">{totalPassCount}</p>
+        <div className="card-shell p-4">
+          <p className="text-xs text-subtle uppercase tracking-[0.2em]">Pass Pages</p>
+          <p className="text-2xl text-title mt-3">{totalPassCount}</p>
+          <p className="text-xs text-muted mt-1">Verified</p>
         </div>
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <p className="text-sm text-slate-400">Fail Pages</p>
-          <p className="text-3xl font-bold text-red-400 mt-2">{totalFailCount}</p>
+        <div className="card-shell p-4">
+          <p className="text-xs text-subtle uppercase tracking-[0.2em]">Fail Pages</p>
+          <p className="text-2xl text-title mt-3">{totalFailCount}</p>
+          <p className="text-xs text-muted mt-1">Action needed</p>
         </div>
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <p className="text-sm text-slate-400">Status</p>
-          <p className={`text-lg font-bold mt-2 ${document.status === "completed" ? "text-emerald-400" : "text-amber-400"}`}>
-            {document.status.toUpperCase()}
-          </p>
+        <div className="card-shell p-4">
+          <p className="text-xs text-subtle uppercase tracking-[0.2em]">Status</p>
+          <div className="mt-3">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${document.status === "completed" ? "badge-success" : "badge-warning"}`}>
+              {document.status.toUpperCase()}
+            </span>
+          </div>
+          <p className="text-xs text-muted mt-2">Overall</p>
         </div>
       </div>
 
       {/* Pages Grid */}
-      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Pages Audit Grid</h3>
-        <div className="grid grid-cols-6 md:grid-cols-12 gap-3">
+      <div>
+        <h3 className="text-lg text-heading mb-4">Pages Audit Grid</h3>
+        <div className="grid grid-cols-10 md:grid-cols-12 gap-3">
           {document.pages?.map((page) => (
             <button
               key={page.page_number}
               onClick={() => handlePageClick(page)}
-              className={`aspect-square rounded-lg font-semibold text-sm transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`w-11 h-11 text-base font-semibold page-tile ${
                 page.status === "pass" || page.status === "manual_pass"
-                  ? "bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:border-emerald-500"
+                  ? "page-tile-pass"
                   : page.status === "fail" || page.status === "manual_fail"
-                    ? "bg-red-600/20 text-red-400 border border-red-600/30 hover:border-red-500"
-                    : "bg-slate-700 text-slate-300 border border-slate-600 hover:border-slate-500"
+                    ? "page-tile-fail"
+                    : ""
               }`}
             >
               <span className="text-base leading-none">{page.page_number}</span>
-              <span className="text-[10px] uppercase tracking-wide opacity-80">
-                {statusLabel(page.status)}
-              </span>
             </button>
           ))}
         </div>
@@ -476,7 +493,7 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
 
       {/* Audit Content */}
       <div>
-        <div className="min-h-[80vh] rounded-xl border border-slate-700 bg-slate-800/30 p-6 overflow-y-auto">
+        <div className="min-h-[80vh] overflow-y-auto">
           <AuditPreview markdown={document.result} isStreaming={false} showPages={false} />
         </div>
       </div>
@@ -485,27 +502,27 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
       {showModal && selectedPage && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
           <div
-            className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-5xl max-h-[85vh] overflow-hidden"
+            className="card-shell w-full max-w-5xl max-h-[85vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-              <h2 className="text-xl font-bold text-white">Page {selectedPage.page_number}</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+              <h2 className="text-xl text-title">Page {selectedPage.page_number}</h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-white text-2xl"
+                className="btn-ghost text-xl"
               >
                 ✕
               </button>
             </div>
 
             {/* Modal Tabs */}
-            <div className="flex border-b border-slate-700">
+            <div className="flex border-b border-[var(--color-border)]">
               <button
                 className={`flex-1 px-5 py-2.5 text-sm font-medium ${
                   activeTab === "info"
-                    ? "text-white bg-slate-700/50"
-                    : "text-slate-400 hover:text-white"
+                    ? "text-title bg-[var(--color-surface-strong)]"
+                    : "text-muted hover:text-[var(--color-text)]"
                 }`}
                 onClick={() => setActiveTab("info")}
               >
@@ -514,8 +531,8 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
               <button
                 className={`flex-1 px-5 py-2.5 text-sm font-medium ${
                   activeTab === "details"
-                    ? "text-white bg-slate-700/50"
-                    : "text-slate-400 hover:text-white"
+                    ? "text-title bg-[var(--color-surface-strong)]"
+                    : "text-muted hover:text-[var(--color-text)]"
                 }`}
                 onClick={() => setActiveTab("details")}
               >
@@ -525,8 +542,8 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
                 <button
                   className={`flex-1 px-5 py-2.5 text-sm font-medium ${
                     activeTab === "issue"
-                      ? "text-white bg-slate-700/50"
-                      : "text-slate-400 hover:text-white"
+                      ? "text-title bg-[var(--color-surface-strong)]"
+                      : "text-muted hover:text-[var(--color-text)]"
                   }`}
                   onClick={() => setActiveTab("issue")}
                 >
@@ -536,8 +553,8 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
               <button
                 className={`flex-1 px-5 py-2.5 text-sm font-medium ${
                   activeTab === "preview"
-                    ? "text-white bg-slate-700/50"
-                    : "text-slate-400 hover:text-white"
+                    ? "text-title bg-[var(--color-surface-strong)]"
+                    : "text-muted hover:text-[var(--color-text)]"
                 }`}
                 onClick={() => setActiveTab("preview")}
               >
@@ -549,7 +566,7 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
             {activeTab === "details" ? (
               <div className="px-6 py-5 grid gap-4">
                 {typeof selectedPage.details?.summary === "string" && selectedPage.details.summary.trim() ? (
-                  <div className="rounded-xl bg-slate-950/40 border border-slate-800 p-4 max-h-[58vh] overflow-auto">
+                  <div className="max-h-[58vh] overflow-auto">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={detailMarkdownComponents}
@@ -558,7 +575,7 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <pre className="bg-slate-900/50 p-4 rounded-lg text-xs text-slate-300 overflow-auto max-h-[58vh]">
+                  <pre className="surface-strong p-4 rounded-lg text-xs text-muted overflow-auto max-h-[58vh]">
                     {JSON.stringify(selectedPage.details, null, 2)}
                   </pre>
                 )}
@@ -566,28 +583,28 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
             ) : activeTab === "info" ? (
               <div className="px-6 py-5 grid gap-4">
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/40 px-4 py-1.5">
-                    <span className="text-xs uppercase tracking-wide text-slate-400">Current</span>
+                  <div className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-strong)] px-4 py-1.5">
+                    <span className="text-xs uppercase tracking-wide text-subtle">Current</span>
                     <span
                       className={`px-2.5 py-1 rounded-full text-sm font-semibold ${
                         selectedPage.status === "pass" || selectedPage.status === "manual_pass"
-                          ? "bg-emerald-600/20 text-emerald-400"
-                          : "bg-red-600/20 text-red-400"
+                          ? "badge-success"
+                          : "badge-danger"
                       }`}
                     >
                       {selectedPage.status.toUpperCase().replace("_", " ")}
                     </span>
                   </div>
                   {selectedPage.manual_pass_reason && (
-                    <div className="text-xs text-emerald-300">Manual pass reason: {selectedPage.manual_pass_reason}</div>
+                    <div className="text-xs text-[var(--color-success)]">Manual pass reason: {selectedPage.manual_pass_reason}</div>
                   )}
                   {selectedPage.manual_fail_reason && (
-                    <div className="text-xs text-red-300">Manual fail reason: {selectedPage.manual_fail_reason}</div>
+                    <div className="text-xs text-[var(--color-danger)]">Manual fail reason: {selectedPage.manual_fail_reason}</div>
                   )}
                 </div>
                 {user.role === "auditor" && (
                   <div className="grid gap-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                    <p className="text-xs uppercase tracking-wide text-subtle">
                       Manual Audit Override
                     </p>
                     <div className="grid grid-cols-2 gap-3">
@@ -595,8 +612,8 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
                         onClick={() => handleManualStatus("manual_pass")}
                         className={`px-4 py-2 rounded-lg font-medium transition-all border ${
                           pendingStatus === "manual_pass" || selectedPage.status === "manual_pass"
-                            ? "bg-emerald-600 text-white border-emerald-500"
-                            : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                            ? "bg-[var(--color-success)] text-[#0b1a1d] border-transparent"
+                            : "surface-strong text-body border-[var(--color-border)] hover:bg-[var(--color-surface-soft)]"
                         }`}
                       >
                         ✓ Manual Pass
@@ -605,15 +622,15 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
                         onClick={() => handleManualStatus("manual_fail")}
                         className={`px-4 py-2 rounded-lg font-medium transition-all border ${
                           pendingStatus === "manual_fail" || selectedPage.status === "manual_fail"
-                            ? "bg-red-600 text-white border-red-500"
-                            : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                            ? "bg-[var(--color-danger)] text-[#0b1a1d] border-transparent"
+                            : "surface-strong text-body border-[var(--color-border)] hover:bg-[var(--color-surface-soft)]"
                         }`}
                       >
                         ✗ Manual Fail
                       </button>
                     </div>
                     <div className="grid gap-2">
-                      <label className="text-xs uppercase tracking-wide text-slate-500">
+                      <label className="text-xs uppercase tracking-wide text-subtle">
                         Reason (required for manual override)
                       </label>
                       <textarea
@@ -621,10 +638,10 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
                         onChange={(event) => setManualReason(event.target.value)}
                         rows={3}
                         placeholder="Explain why you are overriding the audit result..."
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        className="w-full input-field px-3 py-2 text-sm"
                       />
                       {saveError && (
-                        <p className="text-xs text-red-400">{saveError}</p>
+                        <p className="text-xs text-[var(--color-danger)]">{saveError}</p>
                       )}
                       <div className="flex justify-end">
                         <button
@@ -632,8 +649,8 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
                           disabled={saving || !pendingStatus}
                           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                             saving || !pendingStatus
-                              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                              : "bg-emerald-600 text-white hover:bg-emerald-500"
+                              ? "surface-strong text-subtle cursor-not-allowed"
+                              : "btn-primary"
                           }`}
                         >
                           {saving ? "Saving..." : "Save Override"}
@@ -646,8 +663,8 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
                           }
                           className={`ml-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                             saving || (selectedPage.status !== "manual_pass" && selectedPage.status !== "manual_fail")
-                              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                              : "bg-slate-600 text-white hover:bg-slate-500"
+                              ? "surface-strong text-subtle cursor-not-allowed"
+                              : "btn-secondary"
                           }`}
                         >
                           Clear Override
@@ -659,21 +676,21 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
 
                 {user.role === "auditor" && (
                   <div className="grid gap-2">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                    <p className="text-xs uppercase tracking-wide text-subtle">
                       Issues
                     </p>
-                    {issueLoading && <p className="text-xs text-slate-400">Loading issues...</p>}
-                    {issueError && <p className="text-xs text-red-400">{issueError}</p>}
+                    {issueLoading && <p className="text-xs text-muted">Loading issues...</p>}
+                    {issueError && <p className="text-xs text-[var(--color-danger)]">{issueError}</p>}
                     {!issueLoading && issueList.length === 0 && (
-                      <p className="text-xs text-slate-400">No issues raised.</p>
+                      <p className="text-xs text-muted">No issues raised.</p>
                     )}
                     {issueList.map((issue) => (
-                      <div key={issue.id} className="rounded-lg border border-slate-700 bg-slate-900/40 p-3">
-                        <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                      <div key={issue.id} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-strong)] p-3">
+                        <div className="flex items-center justify-between text-xs text-subtle mb-1">
                           <span className="uppercase">{issue.severity}</span>
                           <span className="uppercase">{issue.status}</span>
                         </div>
-                        <p className="text-sm text-slate-200 mb-2">{issue.reason}</p>
+                        <p className="text-sm text-body mb-2">{issue.reason}</p>
                         {issue.status === "pending" ? (
                           <div className="grid gap-2">
                             <textarea
@@ -683,25 +700,25 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
                               }
                               rows={2}
                               placeholder="Resolution notes (optional)"
-                              className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                              className="w-full input-field px-3 py-2 text-xs"
                             />
                             <div className="flex gap-2 justify-end">
                               <button
                                 onClick={() => handleResolveIssue(issue.id, "resolved")}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500"
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-primary"
                               >
                                 Resolve
                               </button>
                               <button
                                 onClick={() => handleResolveIssue(issue.id, "rejected")}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-500"
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ backgroundColor: "var(--color-danger)", color: "#0b1a1d" }}
                               >
                                 Reject
                               </button>
                             </div>
                           </div>
                         ) : issue.resolution_notes ? (
-                          <p className="text-xs text-slate-400">Notes: {issue.resolution_notes}</p>
+                          <p className="text-xs text-muted">Notes: {issue.resolution_notes}</p>
                         ) : null}
                       </div>
                     ))}
@@ -710,34 +727,34 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
               </div>
             ) : activeTab === "issue" ? (
               <div className="px-6 py-5 grid gap-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Raise Issue</p>
-                {issueLoading && <p className="text-xs text-slate-400">Loading issues...</p>}
-                {issueError && <p className="text-xs text-red-400">{issueError}</p>}
+                <p className="text-xs uppercase tracking-wide text-subtle">Raise Issue</p>
+                {issueLoading && <p className="text-xs text-muted">Loading issues...</p>}
+                {issueError && <p className="text-xs text-[var(--color-danger)]">{issueError}</p>}
                 {!issueLoading && issueList.length > 0 && (
                   <div className="grid gap-2">
                     {issueList.map((issue) => (
-                      <div key={issue.id} className="rounded-lg border border-slate-700 bg-slate-900/40 p-3">
-                        <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                      <div key={issue.id} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-strong)] p-3">
+                        <div className="flex items-center justify-between text-xs text-subtle mb-1">
                           <span className="uppercase">{issue.severity}</span>
                           <span className="uppercase">{issue.status}</span>
                         </div>
-                        <p className="text-sm text-slate-200">{issue.reason}</p>
+                        <p className="text-sm text-body">{issue.reason}</p>
                         {issue.resolution_notes && (
-                          <p className="text-xs text-slate-400 mt-1">Notes: {issue.resolution_notes}</p>
+                          <p className="text-xs text-muted mt-1">Notes: {issue.resolution_notes}</p>
                         )}
                       </div>
                     ))}
                   </div>
                 )}
                 {!issueLoading && issueList.length === 0 && (
-                  <p className="text-xs text-slate-400">No issues raised yet.</p>
+                  <p className="text-xs text-muted">No issues raised yet.</p>
                 )}
                 <div className="grid gap-2">
-                  <label className="text-xs uppercase tracking-wide text-slate-500">Severity</label>
+                  <label className="text-xs uppercase tracking-wide text-subtle">Severity</label>
                   <select
                     value={issueSeverity}
                     onChange={(event) => setIssueSeverity(event.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    className="w-full input-field px-3 py-2 text-sm"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -746,24 +763,24 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
                   </select>
                 </div>
                 <div className="grid gap-2">
-                  <label className="text-xs uppercase tracking-wide text-slate-500">Reason</label>
+                  <label className="text-xs uppercase tracking-wide text-subtle">Reason</label>
                   <textarea
                     value={issueReason}
                     onChange={(event) => setIssueReason(event.target.value)}
                     rows={4}
                     placeholder="Describe the issue for this page..."
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    className="w-full input-field px-3 py-2 text-sm"
                   />
                 </div>
-                {issueError && <p className="text-xs text-red-400">{issueError}</p>}
+                {issueError && <p className="text-xs text-[var(--color-danger)]">{issueError}</p>}
                 <div className="flex justify-end">
                   <button
                     onClick={handleRaiseIssue}
                     disabled={issueLoading}
                     className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                       issueLoading
-                        ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                        : "bg-emerald-600 text-white hover:bg-emerald-500"
+                        ? "surface-strong text-subtle cursor-not-allowed"
+                        : "btn-primary"
                     }`}
                   >
                     {issueLoading ? "Saving..." : "Raise Issue"}
@@ -773,17 +790,17 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({ token, u
             ) : (
               <div className="px-6 py-5">
                 {pdfLoading ? (
-                  <p className="text-sm text-slate-400">Loading PDF preview...</p>
+                  <p className="text-sm text-muted">Loading PDF preview...</p>
                 ) : pdfError ? (
-                  <p className="text-sm text-red-400">{pdfError}</p>
+                  <p className="text-sm text-[var(--color-danger)]">{pdfError}</p>
                 ) : pdfUrl ? (
                   <iframe
                     title={`PDF preview page ${selectedPage.page_number}`}
-                    className="w-full h-[520px] rounded-lg border border-slate-700 bg-black"
+                    className="w-full h-[520px] rounded-lg border border-[var(--color-border)] bg-black"
                     src={`${pdfUrl}#page=${selectedPage.page_number}`}
                   />
                 ) : (
-                  <p className="text-sm text-slate-400">Preview not available.</p>
+                  <p className="text-sm text-muted">Preview not available.</p>
                 )}
               </div>
             )}

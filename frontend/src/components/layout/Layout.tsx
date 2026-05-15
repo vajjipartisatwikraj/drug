@@ -16,7 +16,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col">
+    <div className="min-h-screen app-shell flex flex-col">
       {/* Navbar */}
       <Navbar user={user} onLogout={onLogout} />
 
@@ -26,7 +26,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
         <Sidebar userRole={user?.role || "auditor"} isExpanded={sidebarExpanded} setIsExpanded={setSidebarExpanded} />
 
         {/* Content - dynamically adjusts margin based on sidebar state */}
-        <main className={`flex-1 overflow-auto flex flex-col bg-slate-900 transition-all duration-300 ease-in-out ${
+        <main className={`flex-1 overflow-auto flex flex-col app-shell transition-all duration-300 ease-in-out ${
           sidebarExpanded ? "ml-64" : "ml-20"
         }`}>
           <div className="flex-1 overflow-auto px-6 py-8">

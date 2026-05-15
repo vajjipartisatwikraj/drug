@@ -77,44 +77,44 @@ export const AdminDocsPage: React.FC<AdminDocsPageProps> = ({ token }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Documents Details</h1>
-        <p className="text-slate-400">View all analyzed documents across the system</p>
+        <h1 className="text-3xl text-title mb-2">Documents Details</h1>
+        <p className="text-muted">View all analyzed documents across the system</p>
       </div>
 
       {/* Filter Form */}
-      <form className="rounded-lg border border-slate-700 bg-slate-800/50 p-4" onSubmit={handleFilterSubmit}>
+      <form className="card-shell p-4" onSubmit={handleFilterSubmit}>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <input
             type="number"
             placeholder="Year (e.g. 2026)"
             value={docFilter.year}
             onChange={(e) => setDocFilter((p) => ({ ...p, year: e.target.value }))}
-            className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+            className="input-field px-3 py-2"
           />
           <input
             type="number"
             placeholder="Month (1-12)"
             value={docFilter.month}
             onChange={(e) => setDocFilter((p) => ({ ...p, month: e.target.value }))}
-            className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+            className="input-field px-3 py-2"
           />
           <input
             type="number"
             placeholder="Day (1-31)"
             value={docFilter.day}
             onChange={(e) => setDocFilter((p) => ({ ...p, day: e.target.value }))}
-            className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+            className="input-field px-3 py-2"
           />
           <input
             type="number"
             placeholder="Limit"
             value={docFilter.limit}
             onChange={(e) => setDocFilter((p) => ({ ...p, limit: e.target.value }))}
-            className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+            className="input-field px-3 py-2"
           />
           <button
             type="submit"
-            className="rounded-lg bg-blue-600 px-3 py-2 font-medium text-white hover:bg-blue-500"
+            className="btn-primary px-3 py-2"
           >
             Apply Filters
           </button>
@@ -122,42 +122,42 @@ export const AdminDocsPage: React.FC<AdminDocsPageProps> = ({ token }) => {
       </form>
 
       {/* Stats */}
-      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-        <p className="text-sm text-slate-300">
+      <div className="card-shell p-4">
+        <p className="text-sm text-muted">
           <span className="font-semibold">Total analyzed documents:</span>{" "}
-          <span className="text-white font-bold text-lg">{adminDocsTotal}</span>
+          <span className="text-title font-bold text-lg">{adminDocsTotal}</span>
         </p>
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-slate-700 bg-slate-800/50 overflow-hidden">
+      <div className="card-shell overflow-hidden">
         {loadingAdminDocs && (
-          <p className="text-slate-300 text-sm p-4">Loading document details...</p>
+          <p className="text-muted text-sm p-4">Loading document details...</p>
         )}
         {adminDocsError && (
-          <p className="text-red-400 text-sm p-4">{adminDocsError}</p>
+          <p className="text-[var(--color-danger)] text-sm p-4">{adminDocsError}</p>
         )}
         {!loadingAdminDocs && !adminDocsError && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-700 bg-slate-800/80">
-                  <th className="px-6 py-3 text-left font-semibold text-slate-300">
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-strong)]">
+                  <th className="px-6 py-3 text-left font-semibold text-body">
                     Filename
                   </th>
-                  <th className="px-6 py-3 text-left font-semibold text-slate-300">
+                  <th className="px-6 py-3 text-left font-semibold text-body">
                     Auditor
                   </th>
-                  <th className="px-6 py-3 text-left font-semibold text-slate-300">
+                  <th className="px-6 py-3 text-left font-semibold text-body">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left font-semibold text-slate-300">
+                  <th className="px-6 py-3 text-left font-semibold text-body">
                     Pages
                   </th>
-                  <th className="px-6 py-3 text-left font-semibold text-slate-300">
+                  <th className="px-6 py-3 text-left font-semibold text-body">
                     Analyzed At
                   </th>
-                  <th className="px-6 py-3 text-left font-semibold text-slate-300">
+                  <th className="px-6 py-3 text-left font-semibold text-body">
                     Action
                   </th>
                 </tr>
@@ -166,31 +166,31 @@ export const AdminDocsPage: React.FC<AdminDocsPageProps> = ({ token }) => {
                 {adminDocs.map((d) => (
                   <tr
                     key={d.id}
-                    className="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors"
+                    className="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-strong)] transition-colors"
                   >
-                    <td className="px-6 py-4 text-slate-200 font-medium">{d.filename}</td>
-                    <td className="px-6 py-4 text-slate-400">{d.auditor_username || "-"}</td>
+                    <td className="px-6 py-4 text-body font-medium">{d.filename}</td>
+                    <td className="px-6 py-4 text-muted">{d.auditor_username || "-"}</td>
                     <td className="px-6 py-4">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
                           d.status === "completed"
-                            ? "bg-emerald-600/20 text-emerald-400"
+                            ? "badge-success"
                             : d.status === "processing"
-                              ? "bg-amber-600/20 text-amber-400"
-                              : "bg-slate-600/20 text-slate-400"
+                              ? "badge-warning"
+                              : "badge-neutral"
                         }`}
                       >
                         {d.status.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-200">{d.page_count}</td>
-                    <td className="px-6 py-4 text-slate-400">
+                    <td className="px-6 py-4 text-body">{d.page_count}</td>
+                    <td className="px-6 py-4 text-muted">
                       {toLocalDateTime(d.analyzed_at || d.created_at)}
                     </td>
                     <td className="px-6 py-4">
                       <button
                         onClick={() => navigate(`/document/${d.id}`)}
-                        className="text-blue-400 hover:text-blue-300 font-medium text-sm"
+                        className="text-[var(--color-success)] hover:text-[var(--color-text)] font-medium text-sm"
                       >
                         View
                       </button>

@@ -83,9 +83,9 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
 
       {selectedFile ? (
         <div className="space-y-3">
-          <div className="w-16 h-16 mx-auto bg-slate-700 rounded-lg flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto surface-soft rounded-lg flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-red-400"
+              className="w-8 h-8 text-[var(--color-danger)]"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -93,19 +93,19 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
             </svg>
           </div>
           <div>
-            <p className="text-lg font-medium text-white">
+            <p className="text-lg text-heading">
               {selectedFile.name}
             </p>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted">
               {formatFileSize(selectedFile.size)}
             </p>
           </div>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="w-16 h-16 mx-auto bg-slate-700/50 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto surface-soft rounded-full flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-slate-400"
+              className="w-8 h-8 text-muted"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -119,10 +119,10 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
             </svg>
           </div>
           <div>
-            <p className="text-lg font-medium text-slate-200">
+            <p className="text-lg text-heading">
               Drop your BMR PDF here
             </p>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-muted mt-1">
               or click to browse (supports up to 100MB)
             </p>
           </div>
